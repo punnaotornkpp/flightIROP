@@ -44,7 +44,7 @@ export class LayoutService {
     inputStyle: 'outlined',
     surface: null,
     darkTheme: false,
-    menuMode: 'static',
+    menuMode: 'horizontal',
     menuTheme: 'colorScheme',
   };
 

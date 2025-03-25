@@ -1,13 +1,16 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, OnInit } from '@angular/core';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LayoutService } from '../../layout/service/layout.service';
 import { AppConfigurator } from '../../layout/components/app.configurator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
+import { AuthService, UserInfo } from '../../service/auth.service';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +24,9 @@ import { ButtonModule } from 'primeng/button';
     IconFieldModule,
     InputIconModule,
     ButtonModule,
+    ToastModule,
   ],
+  providers: [MessageService],
   template: `
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -119,13 +124,14 @@ import { ButtonModule } from 'primeng/button';
               >Reset password</a
             >
           </div>
-          <button
+          <button pButton pRipple label="Log In" class="w-full"></button>
+          <!-- <button
             pButton
             pRipple
             label="Log In"
             class="w-full"
             [routerLink]="['/']"
-          ></button>
+          ></button> -->
         </div>
       </div>
     </div>
@@ -133,10 +139,51 @@ import { ButtonModule } from 'primeng/button';
     <app-configurator [simple]="true" />
   `,
 })
-export class Login {
+export class Login implements OnInit {
+  user: UserInfo | null = null;
+  loading = true;
   rememberMe: boolean = false;
 
   LayoutService = inject(LayoutService);
 
   isDarkTheme = computed(() => this.LayoutService.isDarkTheme());
+
+  constructor(
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private router: Router,
+    private readonly massageService: MessageService
+  ) {}
+
+  ngOnInit(): void {
+    const token = this.route.snapshot.queryParamMap.get('token');
+    if (token) {
+      this.authService.validateToken(token).subscribe((result) => {
+        this.user = result;
+        this.loading = false;
+
+        if (result) {
+          // ✅ ต้อง set user เข้า service
+          this.authService.setUser(result);
+
+          // switch (result.role) {
+          //   case 'PLANNING':
+          //   case 'APPROVED':
+          //   case 'ASSIGN':
+          //     this.router.navigate(['/apps/operation']);
+          //     break;
+          // }
+          this.router.navigate(['/apps/operation']);
+        } else {
+          this.massageService.add({
+            severity: 'error',
+            summary: 'Error Message',
+            detail: 'Validation failed',
+          });
+        }
+      });
+    } else {
+      this.loading = false;
+    }
+  }
 }

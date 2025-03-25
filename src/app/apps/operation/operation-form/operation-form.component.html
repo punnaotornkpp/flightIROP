@@ -1,0 +1,329 @@
+<div class="card">
+  <div class="text-surface-900 dark:text-surface-0 block">
+    <h2 class="text-2xl font-bold mb-6">
+      Create Operation - {{ type || "UNKNOWN" }}
+    </h2>
+    <div class="flex flex-col lg:flex-row gap-6">
+      <div class="w-full lg:w-1/4 bg-white dark:bg-zinc-900 rounded shadow p-4">
+        <p-dropdown
+          [options]="typeOptions"
+          [(ngModel)]="formData.type"
+          placeholder="OPS/ASM/SSM"
+          class="w-full mb-3"
+        ></p-dropdown>
+
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="formData.generateNumber"
+          placeholder="Generate Number"
+          class="w-full mb-3"
+          [disabled]="true"
+        />
+
+        <p-dropdown
+          [options]="actionOptions"
+          [(ngModel)]="formData.action"
+          placeholder="Action"
+          class="w-full mb-3"
+          [disabled]="true"
+        />
+
+        <textarea
+          rows="4"
+          class="w-full mb-3 p-inputtext"
+          placeholder="Message*"
+          [(ngModel)]="formData.message"
+        ></textarea>
+
+        <p-calendar
+          [(ngModel)]="formData.createDate"
+          class="w-full mb-3"
+          placeholder="Create Date"
+          dateFormat="dd/mm/yy"
+        ></p-calendar>
+        <ng-container
+          *ngIf="formData.action === 'INFORM' || formData.action === 'RESUME'"
+        >
+          <p-dropdown
+            [options]="informTypeOptions"
+            [(ngModel)]="formData.informType"
+            placeholder="Type"
+            class="w-full mb-3"
+          ></p-dropdown>
+        </ng-container>
+        <button
+          pButton
+          label="Add Flight"
+          class="w-full mt-4"
+          (click)="showFlightDialog = true"
+        ></button>
+      </div>
+      <!-- Right Table -->
+      <div
+        class="w-full lg:w-3/4 bg-white dark:bg-zinc-900 rounded shadow p-4 overflow-x-auto"
+      >
+        <p-table
+          [value]="flightList"
+          [paginator]="false"
+          [rows]="5"
+          class="p-datatable-sm"
+          [scrollable]="true"
+          scrollDirection="horizontal"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Flight Number</th>
+              <th>Origin</th>
+              <th>Destination</th>
+              <th>Aircraft Type</th>
+              <th>Departure Date</th>
+              <th>Action</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-flight let-i="rowIndex">
+            <tr>
+              <td>{{ flight.flightNumber }}</td>
+              <td>{{ flight.origin }}</td>
+              <td>{{ flight.destination }}</td>
+              <td>{{ flight.aircraft }}</td>
+              <td>{{ flight.departureDate }}</td>
+              <td>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-pen-to-square"
+                  class="p-button-rounded p-button-success p-button-sm mx-1"
+                  (click)="editFlight(i)"
+                ></button>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-danger p-button-sm mx-1"
+                  (click)="removeFlight(i)"
+                ></button>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-copy"
+                  class="p-button-rounded p-button-help p-button-sm mx-1"
+                  (click)="duplicateFlight(i)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+    <div class="flex justify-between mt-6">
+      <button
+        pButton
+        label="Back"
+        class="p-button-outlined p-button-danger w-32"
+        (click)="goBack()"
+      ></button>
+
+      <button
+        pButton
+        label="Add"
+        class="p-button p-button-primary w-32"
+        [loading]="isLoading"
+        [disabled]="isLoading"
+        (click)="onAdd()"
+      ></button>
+    </div>
+  </div>
+  <p-dialog
+    header="Create New Flight Irregularity | {{ type }}"
+    [(visible)]="showFlightDialog"
+    [modal]="true"
+    [style]="{ width: '70vw' }"
+    [contentStyle]="{ padding: '1.5rem' }"
+  >
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 items-start">
+      <!-- Flight Number & Departure Date -->
+      <div>
+        <label>Flight Number</label>
+        <input
+          pInputText
+          [(ngModel)]="newFlight.flightNumber"
+          class="w-full"
+          autocomplete="off"
+        />
+      </div>
+      <div>
+        <label>Departure Date</label>
+        <p-calendar
+          [(ngModel)]="newFlight.departureDate"
+          appendTo="body"
+          panelStyleClass="force-bottom"
+          class="w-full"
+          showIcon
+        />
+      </div>
+
+      <!-- Origin & Destination -->
+      <div>
+        <label>Origin</label>
+        <input
+          pInputText
+          [(ngModel)]="newFlight.origin"
+          class="w-full"
+          [disabled]="true"
+          autocomplete="off"
+        />
+      </div>
+      <div>
+        <label>Destination</label>
+        <input
+          pInputText
+          [(ngModel)]="newFlight.destination"
+          class="w-full"
+          [disabled]="true"
+        />
+      </div>
+
+      <!-- Origin Times -->
+      <div>
+        <label>Origin Departure Time</label>
+        <p-calendar
+          [(ngModel)]="newFlight.originDepartureTime"
+          [showTime]="true"
+          appendTo="body"
+          panelStyleClass="force-bottom"
+          class="w-full"
+          showIcon
+          [disabled]="true"
+        />
+      </div>
+      <div>
+        <label>Origin Arrival Time</label>
+        <p-calendar
+          [(ngModel)]="newFlight.originArrivalTime"
+          [showTime]="true"
+          appendTo="body"
+          panelStyleClass="force-bottom"
+          class="w-full"
+          showIcon
+          [disabled]="true"
+        />
+      </div>
+
+      <!-- Divider -->
+      <div class="col-span-2"><hr /></div>
+
+      <!-- Revised Times -->
+      <div
+        *ngIf="
+          formData.action !== 'CANCELLED' &&
+          formData.action !== 'INFORM' &&
+          formData.action !== 'RESUME'
+        "
+      >
+        <label>Revised Departure Time</label>
+        <p-calendar
+          [(ngModel)]="newFlight.revisedDepartureTime"
+          [showTime]="true"
+          appendTo="body"
+          panelStyleClass="force-bottom"
+          class="w-full"
+          showIcon
+        />
+      </div>
+      <div
+        *ngIf="
+          formData.action !== 'CANCELLED' &&
+          formData.action !== 'INFORM' &&
+          formData.action !== 'RESUME'
+        "
+      >
+        <label>Revised Arrival Time</label>
+        <p-calendar
+          [(ngModel)]="newFlight.revisedArrivalTime"
+          [showTime]="true"
+          appendTo="body"
+          panelStyleClass="force-bottom"
+          class="w-full"
+          showIcon
+        />
+      </div>
+
+      <!-- Aircraft -->
+      <div>
+        <label>Origin Aircraft</label>
+        <p-dropdown
+          [options]="aircraftList"
+          [(ngModel)]="newFlight.originAircraft"
+          class="w-full"
+          placeholder="Air Craft"
+          [disabled]="true"
+        />
+      </div>
+      <div *ngIf="formData.action !== 'INFORM' && formData.action !== 'RESUME'">
+        <label>Revised Aircraft</label>
+        <p-dropdown
+          [options]="aircraftList"
+          [(ngModel)]="newFlight.revisedAircraft"
+          class="w-full"
+          placeholder="Air Craft"
+        />
+      </div>
+
+      <!-- Message (Full Row) -->
+      <div class="col-span-2">
+        <label>Message*</label>
+        <textarea
+          [(ngModel)]="newFlight.message"
+          rows="5"
+          class="w-full p-inputtext resize-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Button -->
+    <div class="flex justify-end mt-6">
+      <button
+        pButton
+        icon="pi pi-check"
+        label="Create Flight"
+        (click)="addFlight()"
+        class="p-button-success"
+      ></button>
+    </div>
+  </p-dialog>
+  <p-dialog
+    header="Duplicate Flight - Choose New Date"
+    [(visible)]="showDuplicateDialog"
+    [modal]="true"
+    [style]="{ width: '400px' }"
+  >
+    <div class="mb-4">
+      <label class="block mb-2">New Departure Date</label>
+      <p-calendar
+        [(ngModel)]="duplicateDate"
+        showIcon
+        [showTime]="true"
+        appendTo="body"
+        panelStyleClass="force-bottom"
+        class="w-full"
+      ></p-calendar>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button
+        pButton
+        label="Cancel"
+        class="p-button-secondary"
+        (click)="showDuplicateDialog = false"
+      ></button>
+      <button
+        pButton
+        label="Duplicate"
+        icon="pi pi-check"
+        (click)="confirmDuplicate()"
+        [disabled]="!duplicateDate"
+      ></button>
+    </div>
+  </p-dialog>
+</div>

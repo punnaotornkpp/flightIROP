@@ -1,0 +1,115 @@
+<div class="card">
+  <h2 class="text-2xl font-bold mb-2 flex text-center">
+    {{ operation?.uniqueName }} -
+    <p-tag
+      [value]="operation?.status"
+      [severity]="getStatusSeverity(operation?.status)"
+      class="text-lg"
+    ></p-tag>
+  </h2>
+
+  <p class="mb-1"><strong>Header:</strong> {{ operation?.header }}</p>
+  <p class="mb-1">
+    <strong>Generate No.:</strong> {{ operation?.generateNumber }}
+  </p>
+  <p class="mb-1"><strong>Type:</strong> {{ operation?.operationType }}</p>
+  <p class="mb-1"><strong>Action:</strong> {{ operation?.actionType }}</p>
+  <p class="mb-1"><strong>Date:</strong> {{ operation?.createDate }}</p>
+  <p class="mb-4"><strong>Message:</strong> {{ operation?.message }}</p>
+  <p-table [value]="operation?.flights">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Flight No.</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Aircraft</th>
+        <th>Departure</th>
+        <th>Arrival</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-flight>
+      <!-- ORIGINAL ROW -->
+      <tr>
+        <td class="!font-bold !text-gray-700">(ORIGINAL)</td>
+        <td>{{ flight.flightNumber }}</td>
+        <td>{{ flight.origin }}</td>
+        <td>{{ flight.destination }}</td>
+        <td>{{ flight.originAircraft }}</td>
+        <td>{{ flight.originDepartureTime }}</td>
+        <td>{{ flight.originArrivalTime }}</td>
+      </tr>
+      <tr class="!text-red-600 !font-semibold">
+        <td>(DELAYED)</td>
+        <td>{{ flight.flightNumber }}</td>
+        <td>{{ flight.origin }}</td>
+        <td>{{ flight.destination }}</td>
+        <td>
+          {{ flight.revisedAircraft }}
+        </td>
+        <td>
+          {{ flight.revisedDepartureTime }}
+        </td>
+        <td>
+          {{ flight.revisedArrivalTime }}
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <div class="flex justify-between mt-6 items-center">
+    <button
+      pButton
+      label="BACK"
+      class="p-button-outlined p-button-danger p-button-md w-24"
+      (click)="back()"
+      [disabled]="isLoading"
+    ></button>
+
+    <div class="flex gap-2 items-center">
+      <!-- Loading spinner -->
+      <p *ngIf="isLoading" class="text-blue-500 font-semibold">Processing...</p>
+
+      <!-- Print -->
+      <button
+        pButton
+        label="Print"
+        class="p-button-info"
+        icon="pi pi-print"
+        (click)="onPrint()"
+        [disabled]="isLoading"
+      ></button>
+
+      <!-- Save Draft -->
+      <button
+        pButton
+        label="SAVE DRAFT"
+        class="p-button-info"
+        icon="pi pi-save"
+        (click)="saveDraft()"
+        [disabled]="status !== 'CREATED' || isLoading"
+      ></button>
+
+      <!-- Approve -->
+      <button
+        *ngIf="status !== 'APPROVED'"
+        pButton
+        label="APPROVED"
+        class="p-button-success"
+        icon="pi pi-check"
+        (click)="onApprove()"
+        [disabled]="isLoading"
+      ></button>
+
+      <!-- Undo Approve -->
+      <button
+        *ngIf="status === 'APPROVED'"
+        pButton
+        label="UNDO APPROVE"
+        class="p-button-warning"
+        icon="pi pi-refresh"
+        (click)="undoApprove()"
+        [disabled]="isLoading"
+      ></button>
+    </div>
+  </div>
+</div>

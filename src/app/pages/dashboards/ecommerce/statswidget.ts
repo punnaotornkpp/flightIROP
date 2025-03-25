@@ -128,7 +128,7 @@ import { FormsModule } from '@angular/forms';
               readonly
               [strokeWidth]="2"
               [size]="90"
-              styleClass="-mt-8 ml-8"
+              styleClass="-mt-8 ml-2"
             />
           </div>
         </div>

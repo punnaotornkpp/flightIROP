@@ -10,10 +10,10 @@ import { TopProductsWidget } from './ecommerce/topproductswidget';
   standalone: true,
   imports: [
     StatsWidget,
-    RecentSalesWidget,
+    // RecentSalesWidget,
     RevenueOverViewWidget,
     SalesByCategoryWidget,
-    TopProductsWidget,
+    // TopProductsWidget,
   ],
   template: `
     <div class="grid grid-cols-12 gap-8">
@@ -24,12 +24,12 @@ import { TopProductsWidget } from './ecommerce/topproductswidget';
       <div class="col-span-12 xl:col-span-3">
         <app-sales-by-category-widget />
       </div>
-      <div class="col-span-12 lg:col-span-7">
+      <!-- <div class="col-span-12 lg:col-span-7">
         <app-recent-sales-widget />
       </div>
       <div class="col-span-12 lg:col-span-5">
         <app-top-products-widget />
-      </div>
+      </div> -->
     </div>
   `,
 })

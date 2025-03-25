@@ -9,8 +9,13 @@ import {
   withEnabledBlockingInitialNavigation,
   withInMemoryScrolling,
 } from '@angular/router';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withFetch,
+} from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [AppComponent],
@@ -29,6 +34,11 @@ import { providePrimeNG } from 'primeng/config';
     providePrimeNG({
       theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } },
     }),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
   ],
   bootstrap: [AppComponent],
 })
