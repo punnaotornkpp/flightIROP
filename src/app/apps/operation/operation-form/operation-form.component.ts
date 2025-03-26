@@ -109,7 +109,7 @@ export class OperationFormComponent implements OnInit {
 
   informTypeOptions = [
     { label: 'Introduced', value: 'INTRODUCED' },
-    { label: '  ', value: 'MAINTENANCE' },
+    { label: 'Maintenance', value: 'MAINTENANCE' },
     { label: 'Pilot Training', value: 'Pilot_training' },
   ];
 
@@ -248,53 +248,62 @@ export class OperationFormComponent implements OnInit {
         flights: this.flightList,
       };
 
-      // ดึงข้อมูลเดิมจาก localStorage
       const existing = JSON.parse(localStorage.getItem('operations') || '[]');
-      // เพิ่มข้อมูลใหม่
-      existing.push(newOperation);
-      // บันทึกกลับเข้า localStorage
+
+      const index = existing.findIndex(
+        (op: any) => op.generateNumber === this.formData.generateNumber
+      );
+
+      if (index !== -1) {
+        // 👈 อัปเดตข้อมูลเก่า
+        existing[index] = newOperation;
+      } else {
+        // 👈 ถ้าไม่เจอ ถือว่าเป็นข้อมูลใหม่
+        existing.push(newOperation);
+      }
+
       localStorage.setItem('operations', JSON.stringify(existing));
 
-      console.log('Submitted:', newOperation);
       this.isLoading = false;
       this.router.navigate(['/apps/operation']);
     }, 1500);
   }
 
   loadOperationData(id: string) {
-    // จำลองการดึงข้อมูลจาก service
-    // หรือ mock จาก localStorage หรือ hardcoded ชั่วคราว
-    const mock = {
-      type: 'OPS',
-      generateNumber: `OPS-${id}`,
-      action: 'REVISED',
-      message: 'ข้อมูลจาก mock',
-      createDate: new Date(),
-      informType: '',
-      flightList: [
-        {
-          flightNumber: 'DD123',
-          departureDate: new Date(),
-          origin: 'DMK',
-          destination: 'CNX',
-          aircraft: 'HS-DBZ',
-          originDepartureTime: new Date(),
-          originArrivalTime: new Date(),
-          revisedDepartureTime: new Date(),
-          revisedArrivalTime: new Date(),
-          originAircraft: 'HS-DBZ',
-          revisedAircraft: 'HS-DBP',
-          message: 'Delay due to weather',
-          status: 'DELAY',
-        },
-      ],
-    };
+    const operations = JSON.parse(localStorage.getItem('operations') || '[]');
 
-    this.formData = {
-      ...mock,
-      createDate: new Date(mock.createDate),
-    };
+    const op = operations.find((o: any) => o.generateNumber === id);
 
-    this.flightList = mock.flightList;
+    if (op) {
+      this.formData = {
+        type: op.type,
+        generateNumber: op.generateNumber,
+        action: op.action,
+        message: op.message,
+        createDate: new Date(op.createDate),
+        informType: op.informType || '',
+      };
+
+      this.flightList = op.flights || [];
+    }
+  }
+
+  loadFlightInfo() {
+    const { flightNumber, departureDate } = this.newFlight;
+
+    if (!flightNumber || !departureDate) return;
+
+    const baseDate = new Date(departureDate);
+    const originDepartureTime = new Date(baseDate);
+    originDepartureTime.setHours(10, 0, 0); // 10:00
+
+    const originArrivalTime = new Date(baseDate);
+    originArrivalTime.setHours(12, 0, 0); // 12:00
+
+    this.newFlight.origin = 'DMK';
+    this.newFlight.destination = 'CNX';
+    this.newFlight.originAircraft = 'HS-DBZ';
+    this.newFlight.originDepartureTime = originDepartureTime;
+    this.newFlight.originArrivalTime = originArrivalTime;
   }
 }

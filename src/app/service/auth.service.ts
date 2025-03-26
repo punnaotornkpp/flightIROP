@@ -13,7 +13,11 @@ export type UserRole =
 
 export interface UserInfo {
   userId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  jobTitle: string;
+  department: string;
   role: UserRole;
   token: string;
 }
@@ -33,19 +37,31 @@ export class AuthService {
   private mockUsers: UserInfo[] = [
     {
       userId: 'u001',
-      name: 'Alice',
+      firstName: 'Alice',
+      lastName: 'Johnson',
+      email: 'alice.johnson@example.com',
+      jobTitle: 'Planning Officer',
+      department: 'Flight Planning',
       role: 'PLANNING_OFFICER',
       token: 'mock-token-123',
     },
     {
       userId: 'u002',
-      name: 'Bob',
+      firstName: 'Bob',
+      lastName: 'Smith',
+      email: 'bob.smith@example.com',
+      jobTitle: 'Planning Manager',
+      department: 'Flight Planning',
       role: 'PLANNING_MANAGER',
       token: 'mock-token-456',
     },
     {
       userId: 'u003',
-      name: 'Charlie',
+      firstName: 'Charlie',
+      lastName: 'Brown',
+      email: 'charlie.brown@example.com',
+      jobTitle: 'Operation Manager',
+      department: 'Operations',
       role: 'OPERATION_MANAGER',
       token: 'mock-token-789',
     },

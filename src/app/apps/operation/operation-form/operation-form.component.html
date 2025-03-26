@@ -126,7 +126,7 @@
 
       <button
         pButton
-        label="Add"
+        [label]="editId ? 'Edit' : 'Add'"
         class="p-button p-button-primary w-32"
         [loading]="isLoading"
         [disabled]="isLoading"
@@ -148,6 +148,7 @@
         <input
           pInputText
           [(ngModel)]="newFlight.flightNumber"
+          (ngModelChange)="loadFlightInfo()"
           class="w-full"
           autocomplete="off"
         />
@@ -156,6 +157,7 @@
         <label>Departure Date</label>
         <p-calendar
           [(ngModel)]="newFlight.departureDate"
+          (onSelect)="loadFlightInfo()"
           appendTo="body"
           panelStyleClass="force-bottom"
           class="w-full"
@@ -260,7 +262,13 @@
           [disabled]="true"
         />
       </div>
-      <div *ngIf="formData.action !== 'INFORM' && formData.action !== 'RESUME'">
+      <div
+        *ngIf="
+          formData.action !== 'INFORM' &&
+          formData.action !== 'RESUME' &&
+          formData.action !== 'CANCELLED'
+        "
+      >
         <label>Revised Aircraft</label>
         <p-dropdown
           [options]="aircraftList"
@@ -296,21 +304,70 @@
     header="Duplicate Flight - Choose New Date"
     [(visible)]="showDuplicateDialog"
     [modal]="true"
-    [style]="{ width: '400px' }"
+    [style]="{ width: '500px' }"
+    [closable]="false"
   >
-    <div class="mb-4">
-      <label class="block mb-2">New Departure Date</label>
-      <p-calendar
-        [(ngModel)]="duplicateDate"
-        showIcon
-        [showTime]="true"
-        appendTo="body"
-        panelStyleClass="force-bottom"
-        class="w-full"
-      ></p-calendar>
+    <div
+      *ngIf="flightToDuplicate"
+      class="space-y-4 text-gray-700 dark:text-gray-200 text-base pt-2"
+    >
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="font-semibold block mb-1">Flight Number</label>
+          <div class="bg-gray-100 dark:bg-zinc-800 px-3 py-2 rounded">
+            {{ flightToDuplicate.flightNumber }}
+          </div>
+        </div>
+
+        <div>
+          <label class="font-semibold block mb-1">Departure Date (new)</label>
+          <p-calendar
+            [(ngModel)]="duplicateDate"
+            showIcon
+            appendTo="body"
+            panelStyleClass="force-bottom"
+            class="w-full"
+          ></p-calendar>
+        </div>
+
+        <div>
+          <label class="font-semibold block mb-1">Origin</label>
+          <div class="bg-gray-100 dark:bg-zinc-800 px-3 py-2 rounded">
+            {{ flightToDuplicate.origin }}
+          </div>
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Destination</label>
+          <div class="bg-gray-100 dark:bg-zinc-800 px-3 py-2 rounded">
+            {{ flightToDuplicate.destination }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Revised Time Fields (Only for REVISED) -->
+      <div *ngIf="formData.action === 'REVISED'" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="font-semibold block mb-1">Revised Departure Time</label>
+          <p-calendar
+            [(ngModel)]="flightToDuplicate.revisedDepartureTime"
+            [showTime]="true"
+            appendTo="body"
+            class="w-full"
+          ></p-calendar>
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Revised Arrival Time</label>
+          <p-calendar
+            [(ngModel)]="flightToDuplicate.revisedArrivalTime"
+            [showTime]="true"
+            appendTo="body"
+            class="w-full"
+          ></p-calendar>
+        </div>
+      </div>
     </div>
 
-    <div class="flex justify-end gap-2 mt-4">
+    <div class="flex justify-end gap-2 mt-6">
       <button
         pButton
         label="Cancel"

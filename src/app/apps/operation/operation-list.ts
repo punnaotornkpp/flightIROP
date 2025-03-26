@@ -318,15 +318,17 @@ export interface Operation {
         </ng-template>
         <ng-template pTemplate="body" let-op let-rowIndex="rowIndex">
           <tr>
-            <td>{{ op.uniqueName }}</td>
+            <td>
+              {{ op.generateNumber }}/{{ op.createDate | date : 'yyyy-MM-dd' }}
+            </td>
             <td>
               <p-tag
-                [value]="op.header?.toUpperCase()"
-                [styleClass]="getHeaderClass(op.header)"
-                [icon]="getHeaderIcon(op.header)"
+                [value]="op.action?.toUpperCase()"
+                [styleClass]="getHeaderClass(op.action)"
+                [icon]="getHeaderIcon(op.action)"
               ></p-tag>
             </td>
-            <td>{{ op.createDate }}</td>
+            <td>{{ op.createDate | date : 'yyyy-MM-dd' }}</td>
             <td>
               <p-tag
                 [value]="op.status"
@@ -461,6 +463,7 @@ export class OperationList implements OnInit {
   }
 
   getAvailableActions(status: string): string[] {
+    // console.log(status);
     const roleMap: Record<UserRole, string[]> = {
       PLANNING_OFFICER: ['EDIT', 'DELETE', 'SEND'],
       PLANNING_MANAGER: ['EDIT', 'DELETE', 'SEND', 'APPROVE'],
@@ -480,11 +483,12 @@ export class OperationList implements OnInit {
         'ASSIGNED',
       ],
     };
-
+    console.log(this.userRole);
     if (!this.userRole) return [];
 
     const allowed = allowedStatuses[this.userRole];
     const actions = roleMap[this.userRole];
+    console.log(actions);
 
     return allowed.includes(status) ? actions : [];
   }
@@ -548,7 +552,19 @@ export class OperationList implements OnInit {
       rejectLabel: 'ยกเลิก',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
+        const deletedOperation = this.operations[index];
+
+        // 1. ลบออกจาก this.operations
         this.operations.splice(index, 1);
+
+        // 2. อัปเดต localStorage
+        const stored = JSON.parse(localStorage.getItem('operations') || '[]');
+        const updated = stored.filter(
+          (op: any) => op.generateNumber !== deletedOperation.generateNumber
+        );
+        localStorage.setItem('operations', JSON.stringify(updated));
+
+        // 3. แจ้งผลลบ
         this.messageService.add({
           severity: 'success',
           summary: 'ลบสำเร็จ',
@@ -641,13 +657,14 @@ export class OperationList implements OnInit {
   }
 
   getHeaderClass(header: string): string {
-    console.log('header', header);
     switch (header) {
-      case 'Cancelled':
+      case 'CANCELLED':
         return '!bg-red-100 !text-red-800';
-      case 'Revised':
+      case 'REVISED':
         return '!bg-yellow-100 !text-yellow-800';
-      case 'Inform':
+      case 'INFORM':
+        return '!bg-green-100 !text-green-800';
+      case 'RESUME':
         return '!bg-green-100 !text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';

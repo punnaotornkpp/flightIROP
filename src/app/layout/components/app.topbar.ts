@@ -37,7 +37,7 @@ import { InputIconModule } from 'primeng/inputicon';
 
     <div class="topbar-end">
       <ul class="topbar-menu">
-        <li class="topbar-search">
+        <!-- <li class="topbar-search">
           <p-iconfield>
             <p-inputicon class="pi pi-search" />
             <input
@@ -47,7 +47,7 @@ import { InputIconModule } from 'primeng/inputicon';
               class="w-48 sm:w-full"
             />
           </p-iconfield>
-        </li>
+        </li> -->
         <li class="ml-3">
           <p-button
             icon="pi pi-palette"

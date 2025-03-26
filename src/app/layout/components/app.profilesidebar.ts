@@ -1,12 +1,14 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { BadgeModule } from 'primeng/badge';
 import { LayoutService } from '../../layout/service/layout.service';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
   selector: '[app-profilesidebar]',
-  imports: [ButtonModule, DrawerModule, BadgeModule],
+  imports: [ButtonModule, DrawerModule, BadgeModule, CommonModule],
   template: `
     <p-drawer
       [visible]="visible()"
@@ -16,10 +18,12 @@ import { LayoutService } from '../../layout/service/layout.service';
       styleClass="layout-profile-sidebar w-full sm:w-25rem"
     >
       <div class="flex flex-col mx-auto md:mx-0">
-        <span class="mb-2 font-semibold">Welcome</span>
-        <span class="text-surface-500 dark:text-surface-400 font-medium mb-8"
-          >Isabella Andolini</span
-        >
+        <div class="text-center mb-6">
+          <h2 class="text-lg font-semibold mb-1">Welcome</h2>
+          <p class="text-primary font-bold text-xl">
+            {{ currentUser?.firstName }} {{ currentUser?.lastName }}
+          </p>
+        </div>
 
         <ul class="list-none m-0 p-0">
           <li>
@@ -32,7 +36,7 @@ import { LayoutService } from '../../layout/service/layout.service';
               <div class="ml-4">
                 <span class="mb-2 font-semibold">Profile</span>
                 <p class="text-surface-500 dark:text-surface-400 m-0">
-                  Lorem ipsum date visale
+                  {{ currentUser?.firstName }} {{ currentUser?.lastName }}
                 </p>
               </div>
             </a>
@@ -42,12 +46,12 @@ import { LayoutService } from '../../layout/service/layout.service';
               class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
             >
               <span>
-                <i class="pi pi-money-bill text-xl text-primary"></i>
+                <i class="pi pi-inbox text-xl text-primary"></i>
               </span>
               <div class="ml-4">
-                <span class="mb-2 font-semibold">Billing</span>
+                <span class="mb-2 font-semibold">Email</span>
                 <p class="text-surface-500 dark:text-surface-400 m-0">
-                  Amet mimin mıollit
+                  {{ currentUser?.email }}
                 </p>
               </div>
             </a>
@@ -57,12 +61,12 @@ import { LayoutService } from '../../layout/service/layout.service';
               class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
             >
               <span>
-                <i class="pi pi-cog text-xl text-primary"></i>
+                <i class="pi pi-briefcase text-xl text-primary"></i>
               </span>
               <div class="ml-4">
-                <span class="mb-2 font-semibold">Settings</span>
+                <span class="mb-2 font-semibold">Job Title</span>
                 <p class="text-surface-500 dark:text-surface-400 m-0">
-                  Exercitation veniam
+                  {{ currentUser?.jobTitle }}
                 </p>
               </div>
             </a>
@@ -72,147 +76,34 @@ import { LayoutService } from '../../layout/service/layout.service';
               class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
             >
               <span>
-                <i class="pi pi-power-off text-xl text-primary"></i>
+                <i class="pi pi-briefcase text-xl text-primary"></i>
               </span>
               <div class="ml-4">
-                <span class="mb-2 font-semibold">Sign Out</span>
+                <span class="mb-2 font-semibold">Department</span>
                 <p class="text-surface-500 dark:text-surface-400 m-0">
-                  Sed ut perspiciatis
+                  {{ currentUser?.department }}
                 </p>
               </div>
             </a>
           </li>
-        </ul>
-      </div>
 
-      <div class="flex flex-col mt-8 mx-auto md:mx-0">
-        <span class="mb-2 font-semibold">Notifications</span>
-        <span class="text-surface-500 dark:text-surface-400 font-medium mb-8"
-          >You have 3 notifications</span
-        >
-
-        <ul class="list-none m-0 p-0">
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <i class="pi pi-comment text-xl text-primary"></i>
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold"
-                  >Your post has new comments</span
-                >
-                <p class="text-surface-500 dark:text-surface-400 m-0">
-                  5 min ago
-                </p>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <i class="pi pi-trash text-xl text-primary"></i>
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold"
-                  >Your post has been deleted</span
-                >
-                <p class="text-surface-500 dark:text-surface-400 m-0">
-                  15min ago
-                </p>
-              </div>
-            </a>
-          </li>
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <i class="pi pi-folder text-xl text-primary"></i>
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold">Post has been updated</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">3h ago</p>
-              </div>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <div class="flex flex-col mt-8 mx-auto md:mx-0">
-        <span class="mb-2 font-semibold">Messages</span>
-        <span class="text-surface-500 dark:text-surface-400 font-medium mb-8"
-          >You have new messages</span
-        >
-
-        <ul class="list-none m-0 p-0">
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <img
-                  src="/demo/images/avatar/circle/avatar-m-8.png"
-                  alt="Avatar"
-                  class="w-8 h-8"
-                />
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold">James Robinson</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
-                  10 min ago
-                </p>
-              </div>
-              <p-badge value="3" class="ml-auto"></p-badge>
-            </a>
-          </li>
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <img
-                  src="/demo/images/avatar/circle/avatar-f-8.png"
-                  alt="Avatar"
-                  class="w-8 h-8"
-                />
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold">Mary Watson</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
-                  15min ago
-                </p>
-              </div>
-              <p-badge value="1" class="ml-auto"></p-badge>
-            </a>
-          </li>
-          <li>
-            <a
-              class="cursor-pointer flex mb-4 p-4 items-center border border-surface-200 dark:border-surface-700 rounded hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-150"
-            >
-              <span>
-                <img
-                  src="/demo/images/avatar/circle/avatar-f-4.png"
-                  alt="Avatar"
-                  class="w-8 h-8"
-                />
-              </span>
-              <div class="ml-4">
-                <span class="mb-2 font-semibold">Aisha Webb</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">3h ago</p>
-              </div>
-              <p-badge value="2" class="ml-auto"></p-badge>
-            </a>
-          </li>
+          <button
+            pButton
+            icon="pi pi-power-off"
+            label="Sign Out"
+            class="w-full p-button-danger p-button-outlined mt-8 !py-4"
+            (click)="onLogout()"
+          ></button>
         </ul>
       </div>
     </p-drawer>
   `,
 })
 export class AppProfileSidebar {
+  private authService = inject(AuthService);
+
+  currentUser = this.authService.getCurrentUser(); // ควรเป็น object { firstName, lastName, ... }
+
   constructor(public layoutService: LayoutService) {}
 
   visible = computed(
@@ -224,5 +115,10 @@ export class AppProfileSidebar {
       ...state,
       profileSidebarVisible: false,
     }));
+  }
+
+  onLogout() {
+    // this.authService.logout(); // หรืออะไรก็ตามที่คุณใช้
+    this.onDrawerHide();
   }
 }
