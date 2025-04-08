@@ -1,0 +1,9 @@
+export type IUserRole =
+  | 'OPERATION_OFFICER'
+  | 'OPERATION_MANAGER'
+  | 'PLANNING_OFFICER'
+  | 'PLANNING_MANAGER'
+  | 'ROOT'
+  | 'CONTACT'
+  | 'APPROVE'
+  | 'ASSIGNE_OFFICER';

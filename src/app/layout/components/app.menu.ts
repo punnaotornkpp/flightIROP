@@ -35,11 +35,11 @@ export class AppMenu {
             icon: 'pi pi-fw pi-home',
             routerLink: ['/'],
           },
-          //   {
-          //     label: 'Banking',
-          //     icon: 'pi pi-fw pi-image',
-          //     routerLink: ['/dashboard-banking'],
-          //   },
+          {
+            label: 'Banking',
+            icon: 'pi pi-fw pi-image',
+            routerLink: ['/dashboard-banking'],
+          },
         ],
       },
       {
@@ -49,7 +49,7 @@ export class AppMenu {
           {
             label: 'Irregularities',
             icon: 'pi pi-fw pi-home',
-            routerLink: ['/apps/operation'],
+            routerLink: ['/admin/operation'],
           },
           //   {
           //     label: 'Banking',

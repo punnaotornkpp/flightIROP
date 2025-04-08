@@ -125,13 +125,6 @@ import { ToastModule } from 'primeng/toast';
             >
           </div>
           <button pButton pRipple label="Log In" class="w-full"></button>
-          <!-- <button
-            pButton
-            pRipple
-            label="Log In"
-            class="w-full"
-            [routerLink]="['/']"
-          ></button> -->
         </div>
       </div>
     </div>
@@ -143,9 +136,7 @@ export class Login implements OnInit {
   user: UserInfo | null = null;
   loading = true;
   rememberMe: boolean = false;
-
   LayoutService = inject(LayoutService);
-
   isDarkTheme = computed(() => this.LayoutService.isDarkTheme());
 
   constructor(
@@ -161,18 +152,8 @@ export class Login implements OnInit {
       this.authService.validateToken(token).subscribe((result) => {
         this.user = result;
         this.loading = false;
-
         if (result) {
-          // ✅ ต้อง set user เข้า service
           this.authService.setUser(result);
-
-          // switch (result.role) {
-          //   case 'PLANNING':
-          //   case 'APPROVED':
-          //   case 'ASSIGN':
-          //     this.router.navigate(['/apps/operation']);
-          //     break;
-          // }
           this.router.navigate(['/apps/operation']);
         } else {
           this.massageService.add({
