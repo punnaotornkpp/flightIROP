@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   environment: 'UAT',
-  flight: 'https://localhost:5237/',
+  flight: 'http://localhost:5237/',
   // portal: 'https://mdev.nokair.com/Nokportal/',
 };
 

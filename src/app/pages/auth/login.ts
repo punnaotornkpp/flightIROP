@@ -8,9 +8,11 @@ import { AppConfigurator } from '../../layout/components/app.configurator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
-import { AuthService, UserInfo } from '../../service/auth.service';
+import { AuthService } from '../../service/auth.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { PermissionService } from '../../service/permission.service';
+import { IUserInfo } from '../../types/auth.model';
 
 @Component({
   selector: 'app-login',
@@ -133,7 +135,7 @@ import { ToastModule } from 'primeng/toast';
   `,
 })
 export class Login implements OnInit {
-  user: UserInfo | null = null;
+  user: IUserInfo | null = null;
   loading = true;
   rememberMe: boolean = false;
   LayoutService = inject(LayoutService);
@@ -143,7 +145,8 @@ export class Login implements OnInit {
     private route: ActivatedRoute,
     private authService: AuthService,
     private router: Router,
-    private readonly massageService: MessageService
+    private messageService: MessageService,
+    private permissionService: PermissionService
   ) {}
 
   ngOnInit(): void {
@@ -153,10 +156,12 @@ export class Login implements OnInit {
         this.user = result;
         this.loading = false;
         if (result) {
-          this.authService.setUser(result);
-          this.router.navigate(['/apps/operation']);
+          localStorage.setItem('jwt', token); // เก็บ token
+          this.authService.setUser(result); // เก็บ user + push เข้า BehaviorSubject
+          this.permissionService.setUser(result); // สำหรับสิทธิ์
+          this.router.navigate(['/admin/operation']);
         } else {
-          this.massageService.add({
+          this.messageService.add({
             severity: 'error',
             summary: 'Error Message',
             detail: 'Validation failed',

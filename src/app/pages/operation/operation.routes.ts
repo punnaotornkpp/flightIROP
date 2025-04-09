@@ -16,13 +16,6 @@ export default [
     data: { breadcrumb: 'Create' },
   },
   {
-    path: 'edit/:id',
-    loadComponent: () =>
-      import('./operation-form/operation-form.component.edit').then(
-        (m) => m.OperationFormEditComponent
-      ),
-  },
-  {
     path: 'approved/:id',
     loadComponent: () =>
       import('./operation-approved/operation-approved.component').then(

@@ -35,7 +35,7 @@ import { AuthService } from '../../service/auth.service';
               </span>
               <div class="ml-4">
                 <span class="mb-2 font-semibold">Profile</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
+                <p class="text-surface-500 dark:text-surface-400 m-0 text-sm">
                   {{ currentUser?.firstName }} {{ currentUser?.lastName }}
                 </p>
               </div>
@@ -50,7 +50,7 @@ import { AuthService } from '../../service/auth.service';
               </span>
               <div class="ml-4">
                 <span class="mb-2 font-semibold">Email</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
+                <p class="text-surface-500 dark:text-surface-400 m-0 text-sm">
                   {{ currentUser?.email }}
                 </p>
               </div>
@@ -65,7 +65,7 @@ import { AuthService } from '../../service/auth.service';
               </span>
               <div class="ml-4">
                 <span class="mb-2 font-semibold">Job Title</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
+                <p class="text-surface-500 dark:text-surface-400 m-0 text-sm">
                   {{ currentUser?.jobTitle }}
                 </p>
               </div>
@@ -80,7 +80,7 @@ import { AuthService } from '../../service/auth.service';
               </span>
               <div class="ml-4">
                 <span class="mb-2 font-semibold">Department</span>
-                <p class="text-surface-500 dark:text-surface-400 m-0">
+                <p class="text-surface-500 dark:text-surface-400 m-0 text-sm">
                   {{ currentUser?.department }}
                 </p>
               </div>
@@ -101,10 +101,15 @@ import { AuthService } from '../../service/auth.service';
 })
 export class AppProfileSidebar {
   private authService = inject(AuthService);
+  private layoutService = inject(LayoutService);
 
-  currentUser = this.authService.getCurrentUser(); // ควรเป็น object { firstName, lastName, ... }
+  currentUser = this.authService.getCurrentUser();
 
-  constructor(public layoutService: LayoutService) {}
+  constructor() {
+    this.authService.currentUser$.subscribe((user) => {
+      this.currentUser = user;
+    });
+  }
 
   visible = computed(
     () => this.layoutService.layoutState().profileSidebarVisible
@@ -118,7 +123,8 @@ export class AppProfileSidebar {
   }
 
   onLogout() {
-    // this.authService.logout(); // หรืออะไรก็ตามที่คุณใช้
+    this.authService.logout();
     this.onDrawerHide();
+    window.location.href = '/login';
   }
 }

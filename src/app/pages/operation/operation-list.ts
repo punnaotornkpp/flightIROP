@@ -17,36 +17,37 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { Router } from '@angular/router';
-import { AuthService, UserRole } from '../../service/auth.service';
+import { AuthService } from '../../service/auth.service';
+import { PermissionService } from '../../service/permission.service';
 
-export interface Flight {
-  flightNumber: string;
-  departureDate: string; // หรือ Date ก็ได้ถ้าคุณ parse เป็น Date ก่อนใช้งาน
-  origin: string;
-  destination: string;
-  aircraft: string;
-  originDepartureTime: string;
-  originArrivalTime: string;
-  revisedDepartureTime: string;
-  revisedArrivalTime: string;
-  originAircraft: string;
-  revisedAircraft: string;
-  message: string;
-}
+// export interface Flight {
+//   flightNumber: string;
+//   departureDate: string; // หรือ Date ก็ได้ถ้าคุณ parse เป็น Date ก่อนใช้งาน
+//   origin: string;
+//   destination: string;
+//   aircraft: string;
+//   originDepartureTime: string;
+//   originArrivalTime: string;
+//   revisedDepartureTime: string;
+//   revisedArrivalTime: string;
+//   originAircraft: string;
+//   revisedAircraft: string;
+//   message: string;
+// }
 
-export type OperationStatus = 'CREATED' | 'APPROVED' | 'ASSIGNED' | 'DONE';
+// export type OperationStatus = 'CREATED' | 'APPROVED' | 'ASSIGNED' | 'DONE';
 
-export interface Operation {
-  header: string;
-  uniqueName: string;
-  generateNumber: string;
-  operationType: 'REVISED' | 'CANCELLED' | 'INFORM' | 'RESUME';
-  actionType: string;
-  message: string;
-  createDate: string; // หรือ Date
-  status: OperationStatus;
-  flights: Flight[];
-}
+// export interface Operation {
+//   header: string;
+//   uniqueName: string;
+//   generateNumber: string;
+//   operationType: 'REVISED' | 'CANCELLED' | 'INFORM' | 'RESUME';
+//   actionType: string;
+//   message: string;
+//   createDate: string; // หรือ Date
+//   status: OperationStatus;
+//   flights: Flight[];
+// }
 
 @Component({
   selector: 'operation-list',
@@ -292,12 +293,13 @@ export interface Operation {
           class="border rounded px-4 py-2"
         />
         <p-splitbutton
+          *ngIf="permissionService.canCreate()"
           label="Create"
           icon="pi pi-plus"
           [model]="createOptions"
           class="bg-yellow-500 text-white rounded-md ml-auto mr-4"
           (onClick)="onDefaultCreateClick()"
-        ></p-splitbutton>
+        />
       </div>
 
       <p-table
@@ -335,9 +337,8 @@ export interface Operation {
                 [severity]="getStatusSeverity(op.status)"
               ></p-tag>
             </td>
-            <td>
+            <!-- <td>
               <ng-container [ngSwitch]="getAvailableActions(op.status)">
-                <!-- Edit -->
                 <button
                   *ngIf="getAvailableActions(op.status).includes('EDIT')"
                   pButton
@@ -345,8 +346,6 @@ export interface Operation {
                   class="p-button-rounded p-button-success p-button-sm mx-1"
                   (click)="onEditOperation(op)"
                 ></button>
-
-                <!-- Delete -->
                 <button
                   *ngIf="getAvailableActions(op.status).includes('DELETE')"
                   pButton
@@ -354,8 +353,6 @@ export interface Operation {
                   class="p-button-rounded p-button-danger p-button-sm mx-1"
                   (click)="confirmDelete(rowIndex)"
                 ></button>
-
-                <!-- Send -->
                 <button
                   *ngIf="getAvailableActions(op.status).includes('SEND')"
                   pButton
@@ -371,7 +368,7 @@ export interface Operation {
                   (click)="onApprove(op)"
                 ></button>
               </ng-container>
-            </td>
+            </td> -->
 
             <td>
               <!-- <button
@@ -443,57 +440,56 @@ export class OperationList implements OnInit {
   showViewDialog = false;
   selectedOperation: any = null;
 
-  userRole: UserRole | null = null;
+  userRole: any | null = null;
 
-  operations: Operation[] = [];
+  operations: any[] = [];
 
   constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    public permissionService: PermissionService
   ) {
-    const user = this.authService.getCurrentUser();
-    this.userRole = user?.role ?? null;
+    // const user = this.authService.getCurrentUser();
+    // this.userRole = user?.role ?? null;
   }
 
   ngOnInit(): void {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.permissionService.setUser(user); // ให้ permission ใช้งานได้ทันที
+    }
     const rawData = localStorage.getItem('operations');
-    this.operations = rawData ? (JSON.parse(rawData) as Operation[]) : [];
+    this.operations = rawData ? JSON.parse(rawData) : [];
   }
 
-  getAvailableActions(status: string): string[] {
-    // console.log(status);
-    const roleMap: Record<UserRole, string[]> = {
-      PLANNING_OFFICER: ['EDIT', 'DELETE', 'SEND'],
-      PLANNING_MANAGER: ['EDIT', 'DELETE', 'SEND', 'APPROVE'],
-      OPERATION_OFFICER: ['APPROVE'],
-      OPERATION_MANAGER: ['EDIT', 'DELETE', 'SEND', 'APPROVE'],
-    };
+  // getAvailableActions(status: string): string[] {
+  //   // console.log(status);
+  //   const roleMap: Record<IUserRole, string[]> = {
+  //     PLANNING_OFFICER: ['EDIT', 'DELETE', 'SEND'],
+  //     PLANNING_MANAGER: ['EDIT', 'DELETE', 'SEND', 'APPROVE'],
+  //     OPERATION_OFFICER: ['APPROVE'],
+  //     OPERATION_MANAGER: ['EDIT', 'DELETE', 'SEND', 'APPROVE'],
+  //   };
 
-    const allowedStatuses: Record<UserRole, string[]> = {
-      PLANNING_OFFICER: ['CREATED'],
-      PLANNING_MANAGER: ['CREATED', 'APPROVED', 'INPROGRESS'],
-      OPERATION_OFFICER: ['APPROVE'],
-      OPERATION_MANAGER: [
-        'CREATED',
-        'APPROVED',
-        'INPROGRESS',
-        'APPROVED',
-        'ASSIGNED',
-      ],
-    };
-    if (!this.userRole) return [];
-    const allowed = allowedStatuses[this.userRole];
-    const actions = roleMap[this.userRole];
-    return allowed.includes(status) ? actions : [];
-  }
-
-  navigateToCreate(type: string) {
-    this.router.navigate(['/admin/operation/create'], {
-      queryParams: { type },
-    });
-  }
+  //   const allowedStatuses: Record<UserRole, string[]> = {
+  //     PLANNING_OFFICER: ['CREATED'],
+  //     PLANNING_MANAGER: ['CREATED', 'APPROVED', 'INPROGRESS'],
+  //     OPERATION_OFFICER: ['APPROVE'],
+  //     OPERATION_MANAGER: [
+  //       'CREATED',
+  //       'APPROVED',
+  //       'INPROGRESS',
+  //       'APPROVED',
+  //       'ASSIGNED',
+  //     ],
+  //   };
+  //   if (!this.userRole) return [];
+  //   const allowed = allowedStatuses[this.userRole];
+  //   const actions = roleMap[this.userRole];
+  //   return allowed.includes(status) ? actions : [];
+  // }
 
   onViewOperation(op: any) {
     this.selectedOperation = op;
@@ -673,5 +669,35 @@ export class OperationList implements OnInit {
 
   onApprove(op: any) {
     this.router.navigate(['/admin/operation/approved', op.generateNumber]);
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  navigateToCreate(type: string) {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    // ✅ คำนวณ createdBy จาก role
+    const role = user.role;
+    const createdBy = ['PLANNING_OFFICER', 'PLANNING_MANAGER'].includes(role)
+      ? 'PLN'
+      : ['OPERATION_OFFICER', 'OPERATION_MANAGER'].includes(role)
+      ? 'OPS'
+      : null;
+
+    if (!createdBy) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Unauthorized',
+        detail: 'ไม่สามารถสร้างรายการได้จากสิทธิ์ของคุณ',
+      });
+      return;
+    }
+    this.router.navigate(['/admin/operation/create'], {
+      queryParams: {
+        type, // 'revised' | 'cancelled' | ...
+        createdBy, // 'PLN' | 'OPS'
+      },
+    });
   }
 }

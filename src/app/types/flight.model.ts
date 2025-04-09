@@ -1,17 +1,14 @@
-export interface IFlightScheduleInfoRequest {
+export interface ISearchFlightScheduleRequest {
   flightNumber: string;
   startDate: string;
   endDate: string;
+  singleDate?: boolean;
 }
 
-export type IFlightIropActionType =
-  | 'REVISED'
-  | 'CANCELLED'
-  | 'INFORM'
-  | 'RESUME';
-export type ICreatedBy = 'PLN' | 'OPS';
-export type ISourceType = 'OPS' | 'SSM' | 'ASM';
-export type IFlightIropStatus = 'CREATED' | 'DRAFT' | 'APPROVED';
+export type IropActionType = 'REVISED' | 'CANCELLED' | 'INFORM' | 'RESUME';
+export type CreatedByRole = 'PLN' | 'OPS';
+export type SourceType = 'OPS' | 'SSM' | 'ASM';
+export type IropStatus = 'CREATED' | 'DRAFT' | 'APPROVED';
 
 export interface ISeason {
   label: string;
@@ -23,7 +20,7 @@ export interface INoteOption {
   description: string;
 }
 
-export interface IScheduleDay {
+export interface IScheduleDayDetail {
   dayOfWeek: number;
   estimatedDeparture: string;
   estimatedArrival: string;
@@ -37,30 +34,30 @@ export interface IScheduleDay {
   stops: number;
 }
 
-export interface IFlightSchedule {
+export interface IIropFlightSchedule {
   flightNumber: string;
   origin: string;
   destination: string;
   effectiveDate: string;
   expirationDate: string;
   message: string;
-  days: IScheduleDay[];
+  days: IScheduleDayDetail[];
 }
 
-export interface IFlightIropRequest {
-  actionType: IFlightIropActionType;
+export interface ICreateIropRequest {
+  actionType: IropActionType;
   season: ISeason;
-  createdBy: ICreatedBy;
-  sourceType: ISourceType;
+  createdBy: CreatedByRole;
+  sourceType: SourceType;
   messageCode: string;
   message: string;
   noteOptions: INoteOption[];
-  schedule: IFlightSchedule;
+  schedule: IIropFlightSchedule;
 }
 
-export interface FlightIropResponse extends IFlightIropRequest {
+export interface IIropDetailResponse extends ICreateIropRequest {
   id: string;
-  status: IFlightIropStatus;
+  status: IropStatus;
   createdAt: string;
   modifiedAt: string;
 }
