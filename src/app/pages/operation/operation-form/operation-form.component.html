@@ -3,36 +3,43 @@
     <h2 class="text-2xl font-bold mb-6">
       Create Operation - {{ form.get("actionType")?.value }}
     </h2>
+    <div class="dark:bg-zinc-900 rounded bg-white shadow p-4">
+      <!-- FORM -->
+      <!-- ไม่ใช้ grid-cols-2 แล้ว -->
+      <form [formGroup]="form" (ngSubmit)="onAdd()">
+        <div class="flex flex-col gap-4">
+          <!-- Season -->
+          <!-- กล่องครอบ -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- IATA Season -->
+            <p-dropdown
+              [options]="seasonOptions"
+              formControlName="season"
+              optionLabel="label"
+              optionValue="code"
+              placeholder="Select IATA Season"
+              class="w-full"
+            ></p-dropdown>
 
-    <form [formGroup]="form">
-      <div class="flex flex-col lg:flex-row gap-6">
-        <div
-          class="w-full lg:w-1/3 bg-white dark:bg-zinc-900 rounded shadow p-4"
-        >
-          <p-dropdown
-            [options]="seasonOptions"
-            formControlName="season"
-            optionLabel="label"
-            optionValue="code"
-            placeholder="Select IATA Season"
-            class="w-full mb-3"
-          ></p-dropdown>
+            <!-- Source Type -->
+            <p-dropdown
+              [options]="sourceTypeOptions"
+              formControlName="sourceType"
+              placeholder="Source Type"
+              class="w-full"
+            ></p-dropdown>
+          </div>
 
-          <p-dropdown
-            [options]="sourceTypeOptions"
-            formControlName="sourceType"
-            placeholder="Source Type"
-            class="w-full mb-3"
-          ></p-dropdown>
-
+          <!-- Message -->
           <textarea
             rows="4"
             pInputText
             formControlName="message"
             placeholder="Message*"
-            class="w-full mb-3"
+            class="w-full"
           ></textarea>
 
+          <!-- Notes -->
           <p-multiselect
             [options]="noteOptions"
             formControlName="noteOptions"
@@ -40,53 +47,198 @@
             optionValue="code"
             placeholder="Select Notes"
             [display]="'chip'"
-            class="w-full mb-3"
+            class="w-full"
             [showToggleAll]="false"
           ></p-multiselect>
+
+          <!-- Single Date Checkbox -->
+          <div class="flex items-center justify-end">
+            <p-checkbox
+              [(ngModel)]="flightSearch.singleDate"
+              [ngModelOptions]="{ standalone: true }"
+              binary="true"
+              inputId="singleDate"
+            ></p-checkbox>
+            <label for="singleDate" class="ml-2">Single Date</label>
+          </div>
+
+          <!-- Flight Info -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Flight Number -->
+            <div>
+              <label class="block mb-1">Flight Number</label>
+              <p-inputgroup>
+                <p-inputgroup-addon class="text-gray-500"
+                  >DD</p-inputgroup-addon
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="flightSearch.flightNumber"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Flight Number"
+                  class="w-full"
+                />
+              </p-inputgroup>
+            </div>
+
+            <!-- Start / End Date -->
+            <div *ngIf="!flightSearch.singleDate">
+              <label class="block mb-1">Start Date</label>
+              <p-calendar
+                [(ngModel)]="flightSearch.startDate"
+                [ngModelOptions]="{ standalone: true }"
+                class="w-full"
+                (onSelect)="onDateChange()"
+              ></p-calendar>
+            </div>
+
+            <div *ngIf="!flightSearch.singleDate">
+              <label class="block mb-1">End Date</label>
+              <p-calendar
+                [(ngModel)]="flightSearch.endDate"
+                [ngModelOptions]="{ standalone: true }"
+                class="w-full"
+              ></p-calendar>
+            </div>
+
+            <!-- Single Date only -->
+            <div *ngIf="flightSearch.singleDate" class="md:col-span-2">
+              <label class="block mb-1">Start and End Date</label>
+              <p-calendar
+                [(ngModel)]="flightSearch.startDate"
+                [ngModelOptions]="{ standalone: true }"
+                class="w-full"
+                (onSelect)="onDateChange()"
+              ></p-calendar>
+            </div>
+          </div>
+
+          <!-- Search Button -->
+          <div class="text-right">
+            <button
+              pButton
+              type="button"
+              label="Search"
+              icon="pi pi-search"
+              class="p-button-primary"
+              (click)="fetchFlightSchedule()"
+            ></button>
+          </div>
+        </div>
+      </form>
+
+      <!-- RESULTS -->
+      <div *ngIf="scheduleResult.length > 0" class="mt-6">
+        <h3 class="text-lg font-semibold mb-2">Select Days to Operate:</h3>
+        <div
+          *ngFor="let period of scheduleResult; let i = index"
+          class="border rounded p-4 mb-4"
+        >
+          <!-- Date Range -->
+          <div class="mb-2 font-semibold">
+            {{ period.effectiveDate | date : "dd MMM yyyy" }} -
+            {{ period.expirationDate | date : "dd MMM yyyy" }}
+          </div>
+
+          <!-- Day Selector -->
+          <!-- Day Selector -->
+          <div class="flex flex-wrap gap-2 text-center mb-4">
+            <div
+              *ngFor="let d of [1, 2, 3, 4, 5, 6, 7]"
+              class="flex flex-col items-center w-[40px] text-xs"
+            >
+              <p-checkbox
+                [(ngModel)]="period.selectedDays[d]"
+                [ngModelOptions]="{ standalone: true }"
+                binary="true"
+                inputId="day{{ d }}_{{ i }}"
+              ></p-checkbox>
+              <label [for]="'day' + d + '_' + i" class="mt-1 text-xs">{{
+                getDayLabel(d)
+              }}</label>
+            </div>
+          </div>
+
           <button
             pButton
-            (click)="showFlightDialog = true"
-            label="Add Flight"
-            class="w-1/3 mt-4 float-end"
+            icon="pi pi-cog"
+            label="Configure Selected Days"
+            class="p-button-sm"
+            (click)="configurePeriod(i)"
           ></button>
-        </div>
 
-        <div
-          class="w-full lg:w-2/3 bg-white dark:bg-zinc-900 rounded shadow p-4 overflow-x-auto"
-        >
-          <p-table
-            [value]="form.get('schedule.schedule')?.value"
-            [paginator]="false"
-            [rows]="5"
-            class="p-datatable-sm"
-            [scrollable]="true"
-            scrollDirection="horizontal"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Flight Number</th>
-                <th>Origin</th>
-                <th>Destination</th>
-                <th>Aircraft Type</th>
-                <th>Departure Date</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-flight>
-              <tr>
-                <td>{{ flight.flightNumber }}</td>
-                <td>{{ flight.origin }}</td>
-                <td>{{ flight.destination }}</td>
-                <td>{{ flight.aircraft }}</td>
-                <td>{{ flight.departureDate }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
+          <!-- Editable Table -->
+          <!-- Editable Table -->
+          <div *ngIf="period.configuring" class="mt-4">
+            <p-table
+              [value]="getSelectedSchedule(period)"
+              [responsiveLayout]="'scroll'"
+              class="p-datatable-sm"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Day</th>
+                  <th>Dep</th>
+                  <th>Arr</th>
+                  <th>Origin Aircraft</th>
+                  <th *ngIf="form.get('actionType')?.value === 'REVISED'">
+                    Revised Dep
+                  </th>
+                  <th *ngIf="form.get('actionType')?.value === 'REVISED'">
+                    Revised Arr
+                  </th>
+                  <th>New Aircraft</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-s>
+                <tr>
+                  <td>{{ getDayLabel(s.frequency) }}</td>
+                  <td>{{ s.actualDeparture }}</td>
+                  <td>{{ s.actualArrival }}</td>
+                  <td>{{ s.originAircraft || "-" }}</td>
+
+                  <td *ngIf="form.get('actionType')?.value === 'REVISED'">
+                    <input
+                      pInputText
+                      [(ngModel)]="s.revisedDeparture"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="HH:mm"
+                      class="w-full"
+                    />
+                  </td>
+
+                  <td *ngIf="form.get('actionType')?.value === 'REVISED'">
+                    <input
+                      pInputText
+                      [(ngModel)]="s.revisedArrival"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="HH:mm"
+                      class="w-full"
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      pInputText
+                      [(ngModel)]="s.newAircraft"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="New Aircraft"
+                      class="w-full"
+                    />
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
         </div>
       </div>
 
+      <!-- FOOTER BUTTONS -->
       <div class="flex justify-between mt-6">
         <button
           pButton
+          type="button"
           label="Back"
           class="p-button-outlined p-button-danger w-32"
           (click)="goBack()"
@@ -94,95 +246,13 @@
 
         <button
           pButton
+          type="submit"
           [label]="editId ? 'Edit' : 'Add'"
           class="p-button p-button-primary w-32"
           [loading]="isLoading"
           [disabled]="isLoading"
-          (click)="onAdd()"
         ></button>
       </div>
-    </form>
+    </div>
   </div>
-  <p-dialog
-    header="Search Flight Schedule"
-    [(visible)]="showFlightDialog"
-    [modal]="true"
-    [style]="{ width: '60vw' }"
-    [contentStyle]="{ padding: '1.5rem' }"
-  >
-    <div class="grid grid-cols-1 gap-4">
-      <!-- Checkbox -->
-      <div class="flex items-center gap-2 justify-end">
-        <p-checkbox
-          name="singleDate"
-          [(ngModel)]="flightSearch.singleDate"
-          binary="true"
-          (onChange)="syncSingleDate()"
-        ></p-checkbox>
-        <label for="singleDate">Single Date</label>
-      </div>
-
-      <!-- Flight Number + Date Inputs -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <!-- Flight Number -->
-        <div class="h-full">
-          <label class="block mb-1">Flight Number</label>
-          <p-inputgroup>
-            <p-inputgroup-addon class="text-gray-500">DD</p-inputgroup-addon>
-            <input
-              pInputText
-              class="w-full"
-              [(ngModel)]="flightSearch.flightNumber"
-              placeholder="Flight Number"
-            />
-          </p-inputgroup>
-        </div>
-
-        <!-- Start Date -->
-        <div *ngIf="!flightSearch.singleDate" class="h-full">
-          <label class="block mb-1">Start Date</label>
-          <p-calendar
-            [(ngModel)]="flightSearch.startDate"
-            class="w-full"
-            (onSelect)="onDateChange()"
-          />
-        </div>
-
-        <!-- End Date -->
-        <div *ngIf="!flightSearch.singleDate" class="h-full">
-          <label class="block mb-1">End Date</label>
-          <p-calendar [(ngModel)]="flightSearch.endDate" class="w-full" />
-        </div>
-
-        <!-- Single Date Mode (1 ช่องเต็มแนวนอน) -->
-        <div *ngIf="flightSearch.singleDate">
-          <label class="block mb-1">Start and End Date</label>
-          <p-calendar
-            [(ngModel)]="flightSearch.startDate"
-            class="w-full"
-            (onSelect)="onDateChange()"
-          />
-        </div>
-      </div>
-
-      <!-- Search Button -->
-      <div class="text-end mt-2">
-        <button
-          pButton
-          label="Search"
-          icon="pi pi-search"
-          class="p-button-primary"
-          (click)="fetchFlightSchedule()"
-        ></button>
-      </div>
-    </div>
-
-    <div *ngIf="scheduleResult">
-      <hr class="my-4" />
-      <h3 class="text-lg font-semibold mb-2">Result:</h3>
-      <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto">{{
-        scheduleResult | json
-      }}</pre>
-    </div>
-  </p-dialog>
 </div>

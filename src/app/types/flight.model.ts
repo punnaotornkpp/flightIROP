@@ -20,18 +20,15 @@ export interface INoteOption {
   description: string;
 }
 
-export interface IScheduleDayDetail {
-  dayOfWeek: number;
-  estimatedDeparture: string;
-  estimatedArrival: string;
-  actualDeparture: string;
-  actualArrival: string;
-  revisedDeparture: string | null;
-  revisedArrival: string | null;
-  duration: string;
-  timeAdjustor: number;
-  isActive: boolean;
-  stops: number;
+export interface ICreateIropRequest {
+  actionType: IropActionType;
+  season: ISeason;
+  createdBy: CreatedByRole;
+  sourceType: SourceType;
+  messageCode: string;
+  message: string;
+  noteOptions: INoteOption[];
+  schedule: IIropFlightSchedule;
 }
 
 export interface IIropFlightSchedule {
@@ -43,16 +40,21 @@ export interface IIropFlightSchedule {
   message: string;
   days: IScheduleDayDetail[];
 }
+export interface IScheduleDayDetail {
+  dayOfWeek: number;
+  estimatedDeparture: string;
+  estimatedArrival: string;
+  actualDeparture: string;
+  actualArrival: string;
+  duration: string;
+  timeAdjustor: number;
+  isActive: boolean;
+  stops: number;
+}
 
-export interface ICreateIropRequest {
-  actionType: IropActionType;
-  season: ISeason;
-  createdBy: CreatedByRole;
-  sourceType: SourceType;
-  messageCode: string;
-  message: string;
-  noteOptions: INoteOption[];
-  schedule: IIropFlightSchedule;
+export interface ICreateScheduleDayDetail extends IScheduleDayDetail {
+  revisedDeparture: string | null;
+  revisedArrival: string | null;
 }
 
 export interface IIropDetailResponse extends ICreateIropRequest {
