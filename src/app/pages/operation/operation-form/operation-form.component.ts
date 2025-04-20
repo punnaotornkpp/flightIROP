@@ -1,5 +1,5 @@
-// OperationFormComponent.ts - Enhanced for step-by-step flight irregularity handling
-import { Component, OnInit } from '@angular/core';
+// operation-form.component.ts
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -22,12 +22,17 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { FlightService } from '../../../service/flight.service';
 import { AuthService } from '../../../service/auth.service';
 import {
-  ICreateIropRequest,
   ISeason,
   INoteOption,
-  SourceType,
   IIropFlightSchedule,
+  ISearchFlightScheduleResponse,
+  IScheduleDayDetail,
+  IropSection,
+  IFlightIropRequest,
+  CreatedByRole,
+  IropTransaction,
 } from '../../../types/flight.model';
+import { FlightScheduleEditorComponent } from './flight-schedule-editor/flight-schedule-editor.component';
 
 @Component({
   selector: 'app-operation-form',
@@ -38,6 +43,7 @@ import {
     ReactiveFormsModule,
     FormsModule,
     DropdownModule,
+    FlightScheduleEditorComponent,
     CalendarModule,
     TableModule,
     ButtonModule,
@@ -51,13 +57,28 @@ import {
 })
 export class OperationFormComponent implements OnInit {
   form!: FormGroup;
-  editId: string | null = null;
   isLoading = false;
   userRole: string = '';
+  scheduleResult: ISearchFlightScheduleResponse[] = [];
+  addedFlights: IIropFlightSchedule[] = [];
+  editMap: Map<string, Partial<IScheduleDayDetail>> = new Map();
+  selectedMap: Map<string, boolean> = new Map();
+  sectionEditIndex: number | null = null;
+
+  flightSearch = {
+    flightNumber: '',
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    singleDate: false,
+  };
 
   seasonOptions: ISeason[] = [
     { label: 'Winter 2024', code: 'W24' },
     { label: 'Summer 2025', code: 'S25' },
+    { label: 'Winter 2025', code: 'W25' },
+    { label: 'Summer 2026', code: 'S26' },
+    { label: 'Winter 2026', code: 'W26' },
+    { label: 'Summer 2027', code: 'S27' },
   ];
 
   sourceTypeOptions: { label: string; value: string }[] = [];
@@ -70,16 +91,13 @@ export class OperationFormComponent implements OnInit {
     { code: 'OT', description: 'Others' },
   ];
 
-  flightSearch = {
-    flightNumber: '',
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    singleDate: false,
-  };
-
-  scheduleResult: any[] = [];
-  dayMap = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
+  flightDialogVisible = false;
+  flightEditMode: 'ADD' | 'EDIT' = 'ADD';
+  flightToEdit?: IIropFlightSchedule;
+  @Input() visible: boolean = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+  addedSections: IropSection[] = [];
+  sectionToEdit?: IropSection;
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -91,36 +109,35 @@ export class OperationFormComponent implements OnInit {
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     this.userRole = user?.role ?? '';
-    this.sourceTypeOptions = this.getSourceTypeOptionsByRole(this.userRole);
 
-    this.editId = this.route.snapshot.paramMap.get('id');
+    const createdBy = ['PLANNING_OFFICER', 'PLANNING_MANAGER'].includes(
+      this.userRole
+    )
+      ? 'PLN'
+      : ['OPERATION_OFFICER', 'OPERATION_MANAGER'].includes(this.userRole)
+      ? 'OPS'
+      : null;
+
+    this.sourceTypeOptions = this.getSourceTypeOptionsByRole(this.userRole);
     this.buildForm();
 
-    if (!this.editId) {
-      const type = this.route.snapshot.queryParamMap.get('type')?.toUpperCase();
-      const createdBy = this.route.snapshot.queryParamMap
-        .get('createdBy')
-        ?.toUpperCase();
-
-      if (type && createdBy) {
-        this.form.patchValue({
-          actionType: type,
-          createdBy: createdBy,
-        });
-      } else {
-        this.router.navigate(['/admin/operation']);
-      }
+    if (createdBy) {
+      this.form.patchValue({ createdBy });
     }
+  }
+
+  hideDialog() {
+    this.visible = false;
+    this.visibleChange.emit(this.visible); // เพื่อให้ two-way binding อัปเดต
   }
 
   buildForm() {
     this.form = this.fb.group({
-      actionType: ['', Validators.required],
       createdBy: ['', Validators.required],
       season: [null, Validators.required],
       sourceType: [null, Validators.required],
       messageCode: [''],
-      message: ['', Validators.required],
+      message: [''],
       noteOptions: [[]],
     });
   }
@@ -141,131 +158,151 @@ export class OperationFormComponent implements OnInit {
     return [];
   }
 
-  getDayLabel(freq: number): string {
-    return this.dayMap[freq - 1] || `Day ${freq}`;
-  }
-
-  syncSingleDate() {
-    if (this.flightSearch.singleDate && this.flightSearch.startDate) {
-      this.flightSearch.endDate = this.flightSearch.startDate;
-    }
-  }
-
-  onDateChange() {
-    if (this.flightSearch.singleDate) {
-      this.flightSearch.endDate = this.flightSearch.startDate;
-    }
-  }
-
-  fetchFlightSchedule() {
-    const { flightNumber, startDate, endDate } = this.flightSearch;
-    if (!flightNumber || !startDate || !endDate) return;
-
-    const formattedStart = this.formatDate(startDate);
-    const formattedEnd = this.formatDate(endDate);
-
-    this.service
-      .getFlightScheduleInfo(flightNumber, formattedStart, formattedEnd)
-      .subscribe((resp) => {
-        this.scheduleResult = resp.map((r: any) => ({
-          ...r,
-          selectedDays: {
-            1: true,
-            2: true,
-            3: true,
-            4: true,
-            5: true,
-            6: true,
-            7: true,
-          },
-          configuring: false,
-          schedule: r.schedule.map((s: any) => ({
-            ...s,
-            originAircraft: s.aircraft || '',
-            newAircraft: '',
-            revisedDeparture: '',
-            revisedArrival: '',
-          })),
-        }));
-      });
-  }
-
-  configurePeriod(index: number) {
-    this.scheduleResult[index].configuring =
-      !this.scheduleResult[index].configuring;
-  }
-
-  formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
-
   goBack() {
     this.router.navigate(['/admin/operation']);
   }
 
-  generateMessageCode(): string {
-    const source = this.form.value.sourceType;
-    const createdBy = this.form.value.createdBy;
-    const action = this.form.value.actionType.slice(0, 3);
-    const seasonCode = this.form.value.season?.code || '';
-    const running = '014';
-    return `${source} ${createdBy} ${action} ${seasonCode}/${running}`;
+  // getActiveDays(days: IScheduleDayDetail[]): IScheduleDayDetail[] {
+  //   return days.filter((d) => d.isActive);
+  // }
+
+  getDayLabel(day: number): string {
+    const dayMap = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return dayMap[day - 1];
+  }
+
+  openAddFlightDialog() {
+    this.flightEditMode = 'ADD';
+    this.sectionToEdit = undefined;
+    this.flightDialogVisible = true;
+  }
+
+  // editFlight(flight: IIropFlightSchedule) {
+  //   this.flightEditMode = 'EDIT';
+  //   this.flightToEdit = flight;
+  //   this.flightDialogVisible = true;
+  // }
+
+  onFlightDialogClose() {
+    this.flightDialogVisible = false;
+  }
+
+  onFlightDialogSave(updatedSection: IropSection) {
+    if (this.flightEditMode === 'EDIT' && this.sectionEditIndex !== null) {
+      this.addedSections[this.sectionEditIndex] = updatedSection;
+    } else {
+      this.addedSections.push(updatedSection);
+    }
+    this.sectionEditIndex = null; // reset
+    this.flightDialogVisible = false;
   }
 
   onAdd() {
+    console.log(this.form.value);
     if (this.form.invalid) {
+      console.log('not pass');
       this.form.markAllAsTouched();
       return;
     }
 
-    const payload: ICreateIropRequest = {
-      ...this.form.getRawValue(),
-      messageCode: this.generateMessageCode(),
-      schedule: this.scheduleResult.flatMap((p) =>
-        p.schedule
-          .filter((s: any) => p.selectedDays[+s.frequency])
-          .map((s: any) => ({
-            flightNumber: p.flightNumber,
-            origin: p.origin,
-            destination: p.destination,
-            date: this.deriveDateFromFrequency(p.effectiveDate, +s.frequency),
-            estimatedDeparture: s.estimatedDeparture,
-            estimatedArrival: s.estimatedArrival,
-            revisedDeparture: s.revisedDeparture,
-            revisedArrival: s.revisedArrival,
-            aircraft: s.newAircraft || s.originAircraft,
-            originAircraft: s.originAircraft,
-          }))
-      ),
+    if (this.addedSections.length === 0) {
+      console.log('not pass');
+      alert('Please add at least one flight section.');
+      return;
+    }
+
+    const formValue = this.form.value;
+
+    const payload: IFlightIropRequest = {
+      createdBy: formValue.createdBy,
+      sourceType: formValue.sourceType,
+      season: formValue.season,
+      messageCode: formValue.messageCode || '',
+      message: formValue.message,
+      noteOptions: formValue.noteOptions || [],
+      sections: this.addedSections, // IropSection[] (แต่ละ section มี actionType แล้ว)
     };
 
+    console.log('📦 Final Payload', payload);
+
+    // for mockup
+    const fullTransaction: IropTransaction = {
+      transactionNo: this.generateTransactionNo('OPS', 'S25', 1),
+      status: 'CREATED',
+      createdBy: payload.createdBy,
+      sourceType: payload.sourceType,
+      season: {
+        code: payload.season,
+        label: this.getSeasonLabel(payload.season),
+      },
+      createDate: new Date().toISOString(),
+      modifyDate: new Date().toISOString(),
+      messageCode: payload.messageCode || '',
+      message: payload.message,
+      noteOptions: payload.noteOptions.map((code) => ({
+        code,
+        description: this.getNoteDescription(code),
+      })),
+      sections: payload.sections,
+    };
+    console.log(fullTransaction);
+    const existingRaw = sessionStorage.getItem('iropTransactions');
+    const existingList: IropTransaction[] = existingRaw
+      ? JSON.parse(existingRaw)
+      : [];
+
+    // 👉 เพิ่มรายการใหม่เข้าไปข้างหน้า
+    existingList.unshift(fullTransaction);
+
+    // 👉 เก็บกลับเข้า session storage
+    sessionStorage.setItem('iropTransactions', JSON.stringify(existingList));
+    // simulate API or success
     this.isLoading = true;
-    this.service.createOperation(payload).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/admin/operation']);
-      },
-      error: () => {
-        this.isLoading = false;
-      },
-    });
+    setTimeout(() => {
+      this.isLoading = false;
+      alert('✅ IROP created successfully!');
+      this.router.navigate(['/admin/operation']); // หรือ reset form ก็ได้
+    }, 800);
   }
 
-  deriveDateFromFrequency(startDate: string, frequency: number): string {
-    const base = new Date(startDate);
-    const dayOffset = (frequency - base.getDay() + 7) % 7;
-    const result = new Date(base);
-    result.setDate(base.getDate() + dayOffset);
-    return this.formatDate(result);
+  editSection(section: IropSection, index: number) {
+    this.flightEditMode = 'EDIT';
+    this.sectionToEdit = structuredClone(section); // ลึกเพื่อป้องกัน mutation
+    this.sectionEditIndex = index;
+    this.flightDialogVisible = true;
   }
 
-  isDaySelected(period: any, frequency: number): boolean {
-    return !!period.selectedDays[Number(frequency)];
+  /////// for mockup only
+
+  getNoteDescription(code: string): string {
+    const map: Record<string, string> = {
+      TC: 'Time Change',
+      EQ: 'Equipment Change',
+      CX: 'Flight Cancellation',
+      AC: 'Aircraft Change',
+      OT: 'Others',
+    };
+    return map[code] ?? '';
   }
 
-  getSelectedSchedule(period: any): any[] {
-    return period.schedule.filter((s: { frequency: number }) =>
-      this.isDaySelected(period, s.frequency)
-    );
+  getSeasonLabel(code: string): string {
+    const map: Record<string, string> = {
+      S25: 'Summer 2025',
+      W24: 'Winter 2024',
+      W25: 'Winter 2025',
+      S26: 'Summer 2026',
+      W26: 'Winter 2026',
+      S27: 'Summer 2027',
+    };
+    return `${map[code] || code} (${code})`;
+  }
+
+  generateTransactionNo(
+    createdBy: CreatedByRole,
+    seasonCode: string,
+    id?: number
+  ): string {
+    const finalId = id ?? Math.floor(100 + Math.random() * 900);
+    return `${createdBy}-${seasonCode}-${finalId}`;
   }
 }

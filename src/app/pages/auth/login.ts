@@ -156,7 +156,7 @@ export class Login implements OnInit {
         this.user = result;
         this.loading = false;
         if (result) {
-          localStorage.setItem('jwt', token); // เก็บ token
+          sessionStorage.setItem('bearerToken', token); // เก็บ token
           this.authService.setUser(result); // เก็บ user + push เข้า BehaviorSubject
           this.permissionService.setUser(result); // สำหรับสิทธิ์
           this.router.navigate(['/admin/operation']);

@@ -21,14 +21,16 @@ export class OperationApprovedComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
-
-    const mockOps = JSON.parse(localStorage.getItem('operations') || '[]');
-
-    this.operation = mockOps.find((op: any) => op.generateNumber === id);
-
+    const mockOps = JSON.parse(
+      sessionStorage.getItem('iropTransactions') || '[]'
+    );
+    console.log(id);
+    console.log(mockOps);
+    this.operation = mockOps.find((op: any) => op.transactionNo === id);
     if (this.operation) {
       this.status = this.operation.status;
     }
+    console.log(this.operation);
   }
 
   saveDraft() {
@@ -48,12 +50,11 @@ export class OperationApprovedComponent implements OnInit {
 
   onApprove() {
     this.isLoading = true;
-
     setTimeout(() => {
       this.status = 'APPROVED';
       this.updateStatus('APPROVED');
       this.isLoading = false;
-      this.router.navigate(['/apps/operation']);
+      this.router.navigate(['/admin/operation']);
     }, 1500); // mock delay
   }
 
@@ -65,18 +66,20 @@ export class OperationApprovedComponent implements OnInit {
   onPrint() {}
 
   updateStatus(newStatus: string) {
-    const allOps = JSON.parse(localStorage.getItem('operations') || '[]');
+    const allOps = JSON.parse(
+      sessionStorage.getItem('iropTransactions') || '[]'
+    );
     const index = allOps.findIndex(
-      (op: any) => op.generateNumber === this.operation.generateNumber
+      (op: any) => op.transactionNo === this.operation.transactionNo
     );
     if (index !== -1) {
       allOps[index].status = newStatus;
-      localStorage.setItem('operations', JSON.stringify(allOps));
+      sessionStorage.setItem('iropTransactions', JSON.stringify(allOps));
     }
   }
 
   back() {
-    this.router.navigate(['/apps/operation']);
+    this.router.navigate(['/admin/operation']);
   }
 
   getStatusSeverity(
@@ -101,5 +104,18 @@ export class OperationApprovedComponent implements OnInit {
       default:
         return undefined;
     }
+  }
+
+  shouldShowRevisedRow(d: any): boolean {
+    return !!(d.revisedDeparture || d.revisedArrival);
+  }
+
+  getDayLabel(day: number): string {
+    const map = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return map[day - 1] || '-';
+  }
+
+  getSectionLabel(index: number): string {
+    return `${String.fromCharCode(65 + index)}.`; // A., B., C. ...
   }
 }

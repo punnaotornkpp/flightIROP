@@ -9,14 +9,14 @@ export class AuthService {
   currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    const storedUser = localStorage.getItem('userInfo');
+    const storedUser = sessionStorage.getItem('userInfo');
     if (storedUser) {
       this.currentUserSubject.next(JSON.parse(storedUser));
     }
   }
 
   setUser(user: IUserInfo): void {
-    localStorage.setItem('userInfo', JSON.stringify(user));
+    sessionStorage.setItem('userInfo', JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
 
@@ -29,8 +29,8 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem('jwt');
-    localStorage.removeItem('userInfo');
+    sessionStorage.removeItem('bearerToken');
+    sessionStorage.removeItem('userInfo');
     this.currentUserSubject.next(null);
   }
 

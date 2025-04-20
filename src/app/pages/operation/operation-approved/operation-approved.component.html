@@ -1,7 +1,7 @@
 <div class="card">
   <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
     <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-      {{ operation?.generateNumber }} /
+      {{ operation?.transactionNo }} /
       {{ operation?.createDate | date : "yyyy-MM-dd" }}
     </h2>
     <p-tag
@@ -10,108 +10,176 @@
       class="text-md"
     ></p-tag>
   </div>
+
   <div
-    class="bg-white dark:bg-zinc-900 rounded-md p-6 shadow space-y-2 text-gray-800 dark:text-gray-100 text-lg"
+    class="bg-white dark:bg-zinc-900 rounded-md p-6 shadow text-gray-800 dark:text-gray-100 text-lg space-y-4"
   >
-    <div class="border-b pb-3">
-      <span class="font-semibold text-gray-500 dark:text-gray-400"
-        >Action:</span
-      >
-      <span class="ml-2 font-bold text-red-600 uppercase">{{
-        operation?.action
-      }}</span>
+    <div>
+      <span class="font-semibold text-gray-500">Created By:</span>
+      <span class="ml-2">{{ operation?.createdBy }}</span>
     </div>
-
-    <div class="border-b pb-3">
-      <span class="font-semibold text-gray-500 dark:text-gray-400"
-        >Generate No.:</span
-      >
-      <span class="ml-2">{{ operation?.generateNumber }}</span>
+    <div>
+      <span class="font-semibold text-gray-500">Source Type:</span>
+      <span class="ml-2">{{ operation?.sourceType }}</span>
     </div>
-
-    <div class="border-b pb-3">
-      <span class="font-semibold text-gray-500 dark:text-gray-400">Type:</span>
-      <span class="ml-2">{{ operation?.type }}</span>
+    <div>
+      <span class="font-semibold text-gray-500">Season:</span>
+      <span class="ml-2">{{ operation?.season.label }}</span>
     </div>
-
-    <div class="border-b pb-3">
-      <span class="font-semibold text-gray-500 dark:text-gray-400">Date:</span>
-      <span class="ml-2">{{
-        operation?.createDate | date : "mediumDate"
-      }}</span>
-    </div>
-    <div class="border-b pb-3">
-      <span class="font-semibold text-gray-500 dark:text-gray-400"
-        >Message:</span
-      >
+    <div>
+      <span class="font-semibold text-gray-500">Message:</span>
       <span class="ml-2">{{ operation?.message }}</span>
     </div>
-    <div *ngIf="operation?.informType">
-      <span class="font-semibold text-gray-500 dark:text-gray-400"
-        >Inform Type:</span
-      >
-      <span class="ml-2 font-medium">{{ operation?.informType }}</span>
+    <div *ngIf="operation?.noteOptions?.length">
+      <span class="font-semibold text-gray-500">Notes:</span>
+      <span class="ml-2">
+        <span *ngFor="let note of operation.noteOptions" class="mr-2">
+          • {{ note.description }}
+        </span>
+      </span>
     </div>
   </div>
-  <p-table [value]="operation?.flights">
-    <ng-template pTemplate="header">
-      <tr>
-        <th></th>
-        <th>Flight</th>
-        <th>Date</th>
-        <th>Aircraft</th>
-        <th>Dep. Info</th>
-        <th>Arr. Info</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-flight>
-      <tr>
-        <td class="font-bold text-gray-600">(ORIGINAL)</td>
-        <td>{{ flight.flightNumber }}</td>
-        <td>{{ flight.departureDate | date : "dd MMM yy" }}</td>
-        <td>{{ flight.originAircraft }}</td>
-        <td>
-          dep. {{ flight.origin }} {{ formatTime(flight.originDepartureTime) }}
-        </td>
-        <td>
-          arr. {{ flight.destination }}
-          {{ formatTime(flight.originArrivalTime) }}
-        </td>
-      </tr>
-      <tr
-        *ngIf="flight.revisedDepartureTime || flight.revisedArrivalTime"
-        class="!text-red-600 font-semibold"
+
+  <div class="mt-10 space-y-6">
+    <div
+      *ngFor="let section of operation?.sections; let i = index"
+      class="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-zinc-700"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+            {{ getSectionLabel(i) }} {{ section.title }}
+          </h3>
+        </div>
+        <div>
+          <span
+            class="inline-flex text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900 dark:text-red-200 px-2 py-0.5 rounded"
+          >
+            {{ section.actionType }}
+          </span>
+        </div>
+      </div>
+
+      <div
+        *ngFor="let flight of section.schedule"
+        class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg mb-5 border dark:border-zinc-700"
       >
-        <td>(REVISED)</td>
-        <td>{{ flight.flightNumber }}</td>
-        <td>{{ flight.departureDate | date : "dd MMM yy" }}</td>
-        <td>{{ flight.revisedAircraft || flight.originAircraft }}</td>
-        <td>
-          dep. {{ flight.origin }} {{ formatTime(flight.revisedDepartureTime) }}
-        </td>
-        <td>
-          arr. {{ flight.destination }}
-          {{ formatTime(flight.revisedArrivalTime) }}
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-  <div
-    *ngIf="operation?.action === 'INFORM' || operation?.action === 'RESUME'"
-    class="mt-6 p-4 border-l-4 border-blue-400 bg-blue-50 text-blue-900 rounded"
-  >
-    <p class="mb-2">
-      <i class="pi pi-info-circle mr-2"></i>
-      <strong>{{ operation?.action }} Notice</strong>
-    </p>
-    <p class="mb-1">
-      <strong>Type:</strong>
-      {{ operation?.informType || "N/A" }}
-    </p>
-    <p>
-      <strong>Message:</strong>
-      {{ operation?.message }}
-    </p>
+        <div class="flex justify-between items-center mb-2">
+          <div
+            class="text-sm text-gray-800 dark:text-gray-100 font-medium leading-relaxed"
+          >
+            Flight
+            <span class="font-semibold">{{ flight.flightNumber }}</span>
+            operating on the route
+            <span class="font-semibold">{{ flight.origin }}</span> to
+            <span class="font-semibold">{{ flight.destination }}</span
+            >, scheduled during
+            <span class="text-blue-600 dark:text-blue-400 font-semibold">
+              {{ flight.effectiveDate | date : "dd MMM yyyy" }}
+            </span>
+            to
+            <span class="text-blue-600 dark:text-blue-400 font-semibold">
+              {{ flight.expirationDate | date : "dd MMM yyyy" }} </span
+            >.
+          </div>
+          <!-- 
+          <div class="text-xs text-gray-400">
+            {{ flight.effectiveDate | date : "yyyy-MM-dd" }} -
+            {{ flight.expirationDate | date : "yyyy-MM-dd" }}
+          </div> -->
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left table-auto">
+            <thead>
+              <tr
+                class="text-gray-500 border-b border-gray-200 dark:border-zinc-600"
+              >
+                <th class="p-3 h-14">Day</th>
+                <th class="p-3 h-14">ETD</th>
+                <th class="p-3 h-14">ETA</th>
+                <th class="p-3 h-14" *ngIf="section.actionType === 'REVISED'">
+                  Revised ETD
+                </th>
+                <th class="p-3 h-14" *ngIf="section.actionType === 'REVISED'">
+                  Revised ETA
+                </th>
+                <th class="p-3 h-14" *ngIf="section.actionType === 'REVISED'">
+                  Aircraft
+                </th>
+                <th class="p-3 h-14" *ngIf="section.actionType === 'CANCELLED'">
+                  Status
+                </th>
+                <th
+                  class="p-3 h-14"
+                  *ngIf="['INFORM', 'RESUME'].includes(section.actionType)"
+                >
+                  Message
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let d of flight.schedule">
+                <tr
+                  class="border-t border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <td
+                    class="p-3 h-14 align-middle font-medium whitespace-nowrap"
+                  >
+                    {{ getDayLabel(+d.frequency) }}
+                  </td>
+                  <td class="p-3 h-14 align-middle whitespace-nowrap">
+                    {{ d.estimatedDeparture || "-" }}
+                  </td>
+                  <td class="p-3 h-14 align-middle whitespace-nowrap">
+                    {{ d.estimatedArrival || "-" }}
+                  </td>
+
+                  <!-- REVISED -->
+                  <td
+                    class="p-3 h-14 align-middle text-red-600 whitespace-nowrap"
+                    *ngIf="section.actionType === 'REVISED'"
+                  >
+                    {{ d.revisedDeparture || "-" }}
+                  </td>
+                  <td
+                    class="p-3 h-14 align-middle text-red-600 whitespace-nowrap"
+                    *ngIf="section.actionType === 'REVISED'"
+                  >
+                    {{ d.revisedArrival || "-" }}
+                  </td>
+                  <td
+                    class="p-3 h-14 align-middle text-red-600 whitespace-nowrap"
+                    *ngIf="section.actionType === 'REVISED'"
+                  >
+                    {{ d.aircraft || "-" }}
+                  </td>
+
+                  <!-- CANCELLED -->
+                  <td
+                    class="p-3 h-14 align-middle"
+                    *ngIf="section.actionType === 'CANCELLED'"
+                  >
+                    <p-tag
+                      [value]="d.status ? 'Active' : 'Flight Cancelled'"
+                      [severity]="d.status ? 'success' : 'danger'"
+                    ></p-tag>
+                  </td>
+
+                  <!-- INFORM / RESUME -->
+                  <td
+                    class="p-3 h-14 align-middle text-blue-600 whitespace-nowrap"
+                    *ngIf="['INFORM', 'RESUME'].includes(section.actionType)"
+                  >
+                    {{ d.message || "-" }}
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="flex justify-between mt-6 items-center">
@@ -124,10 +192,8 @@
     ></button>
 
     <div class="flex gap-2 items-center">
-      <!-- Loading spinner -->
       <p *ngIf="isLoading" class="text-blue-500 font-semibold">Processing...</p>
 
-      <!-- Print -->
       <button
         pButton
         label="Print"
