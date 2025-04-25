@@ -35,7 +35,6 @@ export class AuthService {
   }
 
   validateToken(token: string): Observable<IUserInfo | null> {
-    // เปลี่ยนเป็นเรียก API จริงในภายหลัง
     return of({
       userId: '93834fe2-c75b-4276-a7d7-6a1d9ba2e29c',
       email: 'Punnatorn.Yim@nokair.co.th',

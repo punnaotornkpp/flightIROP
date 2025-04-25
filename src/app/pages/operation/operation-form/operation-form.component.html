@@ -3,23 +3,21 @@
     <h2 class="text-2xl font-bold mb-6">Create Operation</h2>
     <form [formGroup]="form" (ngSubmit)="onAdd()" class="flex flex-col gap-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <p-dropdown
+        <p-select
           [options]="seasonOptions"
           formControlName="season"
           optionLabel="label"
           optionValue="code"
           placeholder="Select IATA Season"
           class="w-full"
-        ></p-dropdown>
-
-        <p-dropdown
+        ></p-select>
+        <p-select
           [options]="sourceTypeOptions"
           formControlName="sourceType"
           placeholder="Source Type"
           class="w-full"
-        ></p-dropdown>
+        ></p-select>
       </div>
-
       <textarea
         rows="4"
         pInputText
@@ -38,116 +36,144 @@
         [maxSelectedLabels]="5"
         display="chip"
       ></p-multiselect>
-      <div *ngIf="addedSections.length > 0" class="mt-6 space-y-6">
-        <div
-          *ngFor="let section of addedSections; let i = index"
-          class="border rounded-md p-4 bg-white shadow-sm"
+      <p-accordion [value]="0" [multiple]="true">
+        <p-accordion-panel
+          *ngFor="let f of flightIropItems; let i = index"
+          [value]="i"
         >
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">
-            {{ section.title }}
-            <span class="text-sm font-normal text-gray-400"
-              >({{ section.actionType }})</span
+          <p-accordion-header class="font-medium text-slate-700">
+            <span [innerHTML]="getFlightHeader(f)"></span>
+          </p-accordion-header>
+          <p-accordion-content
+            [ngClass]="{
+              '!border-l-4 pl-3': true,
+              '!border-green-500 !bg-green-50 !rounded-md': isFlightComplete(f),
+              '!bg-white': !isFlightComplete(f)
+            }"
+          >
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm mt-4"
             >
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-text p-button-sm"
-              (click)="editSection(section, i)"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger p-button-sm"
-            ></button>
-          </h3>
-
-          <ng-container *ngFor="let flight of section.schedule">
-            <div class="mb-4">
-              <div class="text-sm text-gray-600 font-medium">
-                {{ flight.flightNumber }} — {{ flight.origin }} →
-                {{ flight.destination }}
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Original Departure</label
+                >
+                <input
+                  [value]="formatDateTime(f.originalDepartureTime)"
+                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                  disabled
+                />
               </div>
-              <div class="text-sm text-gray-400">
-                {{ flight.effectiveDate | date : "yyyy-MM-dd" }} to
-                {{ flight.expirationDate | date : "yyyy-MM-dd" }}
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Revised Departure</label
+                >
+                <p-datepicker
+                  [(ngModel)]="f.revisedDepartureTime"
+                  [ngModelOptions]="{ standalone: true }"
+                  [showTime]="true"
+                  hourFormat="24"
+                  showIcon="true"
+                  appendTo="body"
+                  inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
+                  dateFormat="yy-mm-dd"
+                  placeholder="YYYY-MM-DD HH:mm"
+                ></p-datepicker>
               </div>
 
-              <table class="w-full text-sm mt-2 border rounded overflow-hidden">
-                <thead class="bg-gray-100 text-left">
-                  <tr>
-                    <th class="p-2">Day</th>
-                    <th class="p-2">ETD</th>
-                    <th class="p-2">ETA</th>
+              <!-- Original & Revised Arrival -->
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Original Arrival</label
+                >
+                <input
+                  [value]="formatDateTime(f.originalArrivalTime)"
+                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                  disabled
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Revised Arrival</label
+                >
+                <p-datepicker
+                  [(ngModel)]="f.revisedArrivalTime"
+                  [ngModelOptions]="{ standalone: true }"
+                  [showTime]="true"
+                  hourFormat="24"
+                  showIcon="true"
+                  appendTo="body"
+                  inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
+                  dateFormat="yy-mm-dd"
+                  placeholder="YYYY-MM-DD HH:mm"
+                ></p-datepicker>
+              </div>
 
-                    <!-- Conditional headers -->
-                    <th class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      Revised ETD
-                    </th>
-                    <th class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      Revised ETA
-                    </th>
-                    <th class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      Aircraft
-                    </th>
-                    <th
-                      class="p-2"
-                      *ngIf="
-                        section.actionType === 'INFORM' ||
-                        section.actionType === 'RESUME'
-                      "
-                    >
-                      Message
-                    </th>
-                    <th class="p-2" *ngIf="section.actionType === 'CANCELLED'">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let d of flight.schedule">
-                    <td class="p-2">{{ getDayLabel(+d.frequency) }}</td>
-                    <td class="p-2">{{ d.estimatedDeparture }}</td>
-                    <td class="p-2">{{ d.estimatedArrival }}</td>
+              <!-- Aircraft -->
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Original Aircraft</label
+                >
+                <input
+                  type="text"
+                  [value]="f.originalOperatingAircraft"
+                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                  disabled
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Revised Aircraft</label
+                >
+                <input
+                  type="text"
+                  [(ngModel)]="f.revisedOperatingAircraft"
+                  [ngModelOptions]="{ standalone: true }"
+                  class="w-full border border-gray-300 rounded-md px-2 py-2"
+                />
+              </div>
 
-                    <!-- Conditional cells -->
-                    <td class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      {{ d.revisedDeparture || "-" }}
-                    </td>
-                    <td class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      {{ d.revisedArrival || "-" }}
-                    </td>
-                    <td class="p-2" *ngIf="section.actionType === 'REVISED'">
-                      {{ d.aircraft || "-" }}
-                    </td>
-                    <td
-                      class="p-2"
-                      *ngIf="
-                        section.actionType === 'INFORM' ||
-                        section.actionType === 'RESUME'
-                      "
-                    >
-                      {{ d.message || "-" }}
-                    </td>
-                    <td
-                      class="p-2 text-center"
-                      *ngIf="section.actionType === 'CANCELLED'"
-                    >
-                      <span
-                        [ngClass]="{
-                          'text-red-600': !d.status,
-                          'text-green-600': d.status
-                        }"
-                      >
-                        {{ d.status ? "Active" : "Cancelled" }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <!-- Status -->
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Original Status</label
+                >
+                <input
+                  [value]="f.originalFlightStatus"
+                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                  disabled
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block"
+                  >Revised Status</label
+                >
+                <p-select
+                  [options]="[
+                    { label: 'Open', value: 'Open' },
+                    { label: 'Closed', value: 'Closed' },
+                    { label: 'Cancelled', value: 'Cancelled' }
+                  ]"
+                  [(ngModel)]="f.revisedFlightStatus"
+                  [ngModelOptions]="{ standalone: true }"
+                  appendTo="body"
+                  class="w-full"
+                  placeholder="Select Status"
+                ></p-select>
+              </div>
             </div>
-          </ng-container>
-        </div>
-      </div>
+            <div class="my-4 mx-2 text-right">
+              <button
+                pButton
+                icon="pi pi-trash"
+                label="Remove"
+                class="p-button-text p-button-danger p-button-sm"
+                (click)="removeFlight(i)"
+              ></button>
+            </div>
+          </p-accordion-content>
+        </p-accordion-panel>
+      </p-accordion>
 
       <div class="flex justify-between mt-6">
         <button
@@ -157,7 +183,6 @@
           class="p-button-outlined p-button-danger w-32"
           (click)="goBack()"
         ></button>
-
         <div class="flex gap-2">
           <button
             pButton
@@ -181,8 +206,6 @@
   </div>
   <app-flight-schedule-editor
     [(visible)]="flightDialogVisible"
-    [mode]="flightEditMode"
-    [sectionToEdit]="sectionToEdit"
     (close)="onFlightDialogClose()"
     (save)="onFlightDialogSave($event)"
   ></app-flight-schedule-editor>

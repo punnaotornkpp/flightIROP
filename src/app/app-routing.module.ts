@@ -5,18 +5,18 @@ import { Notfound } from './pages/notfound/notfound';
 
 export const routes: Routes = [
   {
-    path: '',
+    path: 'admin',
     component: AppLayout,
     children: [
       {
-        path: 'admin',
+        path: '',
         loadChildren: () => import('../app/pages/pages.routes'),
       },
     ],
   },
   { path: 'notfound', component: Notfound },
   {
-    path: 'auth',
+    path: '',
     loadChildren: () => import('../app/pages/auth/auth.routes'),
   },
   { path: '**', redirectTo: '/notfound' },

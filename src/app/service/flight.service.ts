@@ -2,21 +2,36 @@ import { Injectable } from '@angular/core';
 import { HttpService } from './http.service';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ISearchFlightScheduleRequest } from '../types/flight.model';
+import {
+  IFlightInfoRequest,
+  IFlightInfoView,
+  IIropFlightSchedule,
+  ISearchFlightScheduleRequest,
+} from '../types/flight.model';
+import { IResponse } from '../types/response.model';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FlightService {
-  constructor(private http: HttpService) {}
+  constructor(private http: HttpService, private https: HttpClient) {}
 
   getFlightScheduleInfo(
-    flightNo: string,
-    start: string,
-    end: string
-  ): Observable<any> {
+    req: ISearchFlightScheduleRequest
+  ): Observable<IIropFlightSchedule[]> {
     return this.http.get(
-      `${environment.flight}api/Flight/schedule?flightNo=${flightNo}&startDate=${start}&endDate=${end}`,
+      `${environment.flight}api/Flight/schedule?flightNumber=${req.flightNumber}&startSearchDate=${req.startSearchDate}&endSearchDate=${req.endSearchDate}`,
+      true
+    );
+  }
+
+  getFlightInfoForSchedule(
+    req: IFlightInfoRequest[]
+  ): Observable<IFlightInfoView[]> {
+    return this.http.post<IFlightInfoRequest[], IFlightInfoView[]>(
+      `${environment.flight}api/Flight/getFlightInfoForSchedule`,
+      req,
       true
     );
   }

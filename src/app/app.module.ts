@@ -16,10 +16,13 @@ import {
 } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { AppShellComponent } from './app-shell.component';
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserModule, AppRoutingModule],
+  imports: [BrowserModule, AppRoutingModule, AppShellComponent],
   providers: [
     provideRouter(
       routes,

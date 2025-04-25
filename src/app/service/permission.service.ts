@@ -27,7 +27,6 @@ export class PermissionService {
       'PLANNING_MANAGER',
       'ROOT',
     ];
-
     return this.currentUser
       ? allowedRoles.includes(this.currentUser.role)
       : false;
