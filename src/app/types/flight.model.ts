@@ -2,6 +2,7 @@ export type IropActionType = 'REVISED' | 'CANCELLED' | 'INFORM' | 'RESUME';
 export type CreatedByRole = 'PLN' | 'OPS';
 export type SourceType = 'OPS' | 'SSM' | 'ASM';
 export type IropStatus = 'CREATED' | 'DRAFT' | 'APPROVED';
+
 export interface ISeason {
   label: string;
   code: string; // e.g. 'S25'
@@ -16,6 +17,8 @@ export interface ISearchFlightScheduleRequest {
   flightNumber: string;
   startSearchDate: string;
   endSearchDate: string;
+  flightStatus: string;
+  dop: string;
 }
 
 export interface IFlightIropRequest {
@@ -45,6 +48,7 @@ export interface IFlightIropItem {
   daysOfOperation: number;
   remark: string | null;
 }
+
 export interface IIropFlightSchedule {
   flightNumber: string;
   origin: string;
@@ -82,5 +86,7 @@ export interface IFlightInfoView {
   destination: string;
   scheduledDeparture: string; // Format: YYYY-MM-DDTHH:mm:ss
   scheduledArrival: string; // Format: YYYY-MM-DDTHH:mm:ss
-  flightStatus: 'Open' | 'Closed' | 'Cancelled';
+  flightStatus: 'OPEN' | 'CLOSED' | 'CANCELLED';
+  frequency: number;
+  day: string;
 }

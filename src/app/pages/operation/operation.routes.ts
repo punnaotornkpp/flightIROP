@@ -16,16 +16,18 @@ export default [
     data: { breadcrumb: 'Create' },
   },
   {
-    path: 'approved/:id',
+    path: 'approved/:transactionNumber',
     loadComponent: () =>
       import('./operation-approved/operation-approved.component').then(
         (m) => m.OperationApprovedComponent
       ),
   },
-
-  //   {
-  //       path: 'edit',
-  //       loadComponent: () => import('./edit').then((c) => c.Edit),
-  //       data: { breadcrumb: 'Edit' }
-  //   }
+  // {
+  //   path: 'edit/:transactionNumber',
+  //   loadComponent: () =>
+  //     import('./operation-form/operation-form.component.edit').then(
+  //       (c) => c.OperationFormEditComponent
+  //     ),
+  //   data: { breadcrumb: 'Edit' },
+  // },
 ] as Routes;

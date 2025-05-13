@@ -1,10 +1,10 @@
 <div class="card">
   <div class="text-surface-900 dark:text-surface-0 block">
     <h2 class="text-2xl font-bold mb-6">Create Operation</h2>
-    <form [formGroup]="form" (ngSubmit)="onAdd()" class="flex flex-col gap-4">
+    <form [formGroup]="form" (ngSubmit)="onAdd()" class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <p-select
-          [options]="seasonOptions"
+          [options]="seasonTypeOptions"
           formControlName="season"
           optionLabel="label"
           optionValue="code"
@@ -18,32 +18,145 @@
           class="w-full"
         ></p-select>
       </div>
-      <textarea
-        rows="4"
-        pInputText
-        formControlName="message"
-        placeholder="Message*"
-        class="w-full"
-      ></textarea>
+      <div class="flex flex-col gap-2">
+        <p-editor
+          formControlName="customNotifyMessage"
+          styleClass="w-full"
+          [style]="{ height: '100px' }"
+        ></p-editor>
+      </div>
+      <div class="flex flex-col gap-2">
+        <textarea
+          rows="2"
+          pInputText
+          formControlName="remark"
+          placeholder="Enter Remark"
+          class="w-full"
+        ></textarea>
+      </div>
+      <div
+        *ngIf="flightIropItems.length > 0"
+        class="flex justify-between items-center mb-2 w-full flex-wrap gap-2"
+      >
+        <div *ngIf="iropActionType === 'REVISED'" class="flex-1">
+          <button
+            pButton
+            label="Set Time for Selected Flights"
+            class="p-button-warning"
+            (click)="handleOpenTimePanel($event, popoverTime)"
+          ></button>
+        </div>
 
-      <p-multiselect
-        [options]="noteOptions"
-        formControlName="noteOptions"
-        optionLabel="description"
-        optionValue="code"
-        placeholder="Select Notes"
-        class="w-full"
-        [maxSelectedLabels]="5"
-        display="chip"
-      ></p-multiselect>
+        <div class="flex gap-2 items-center">
+          <p-select
+            [options]="reasons"
+            [(ngModel)]="selectedReason"
+            [ngModelOptions]="{ standalone: true }"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select Reason to Apply"
+            class="w-64"
+            appendTo="body"
+          ></p-select>
+
+          <button
+            pButton
+            label="Apply to Selected"
+            class="p-button-success"
+            (click)="handleOpenFlightPanel($event, op)"
+            [disabled]="!selectedReason"
+          ></button>
+        </div>
+
+        <!-- Popover for Reason -->
+        <p-popover #op [dismissable]="true">
+          <div class="flex flex-col justify-between h-48 p-4">
+            <p-multiselect
+              [options]="flightNumberOptions"
+              [(ngModel)]="selectedFlightNumbers"
+              [ngModelOptions]="{ standalone: true }"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select Flights"
+              class="w-96 font-mono"
+            ></p-multiselect>
+            <div class="flex justify-end gap-2 mt-2">
+              <button
+                pButton
+                type="button"
+                label="Apply"
+                (click)="confirmApplyReason(op)"
+              ></button>
+            </div>
+          </div>
+        </p-popover>
+
+        <!-- Popover for Bulk Edit Time -->
+        <p-popover #popoverTime [dismissable]="true">
+          <div class="flex flex-col gap-4 w-96 p-4">
+            <p-multiselect
+              [options]="flightNumberOptions"
+              [(ngModel)]="selectedFlightNumbers"
+              [ngModelOptions]="{ standalone: true }"
+              optionLabel="label"
+              optionValue="value"
+              class="font-mono"
+              placeholder="Select Flights"
+            ></p-multiselect>
+            <p-datepicker
+              [(ngModel)]="bulkRevisedDeparture"
+              [ngModelOptions]="{ standalone: true }"
+              [showTime]="true"
+              [timeOnly]="true"
+              hourFormat="24"
+              showIcon="true"
+              appendTo="body"
+              class="font-mono"
+              placeholder="Select Revised Departure Time"
+            ></p-datepicker>
+            <p-datepicker
+              [(ngModel)]="bulkRevisedArrival"
+              [ngModelOptions]="{ standalone: true }"
+              [showTime]="true"
+              [timeOnly]="true"
+              hourFormat="24"
+              showIcon="true"
+              appendTo="body"
+              class="font-mono"
+              placeholder="Select Revised Arrival Time"
+            ></p-datepicker>
+            <div class="flex justify-end">
+              <button
+                pButton
+                label="Apply"
+                class="p-button-success"
+                (click)="confirmBulkTimeUpdate(popoverTime)"
+              ></button>
+            </div>
+          </div>
+        </p-popover>
+      </div>
+
       <p-accordion [value]="0" [multiple]="true">
         <p-accordion-panel
           *ngFor="let f of flightIropItems; let i = index"
           [value]="i"
         >
           <p-accordion-header class="font-medium text-slate-700">
-            <span [innerHTML]="getFlightHeader(f)"></span>
+            <div class="flex justify-between items-center w-full">
+              <!-- ฝั่งซ้าย -->
+              <div [innerHTML]="getFlightHeader(f)" class="font-medium"></div>
+
+              <!-- ฝั่งขวา สรุป -->
+              <div
+                *ngIf="getFlightSummary(f)"
+                class="text-red-500 font-mono text-sm pr-4"
+              >
+                {{ getFlightSummary(f) }}
+              </div>
+            </div>
           </p-accordion-header>
+
           <p-accordion-content
             [ngClass]="{
               '!border-l-4 pl-3': true,
@@ -54,113 +167,133 @@
             <div
               class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm mt-4"
             >
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Original Departure</label
-                >
-                <input
-                  [value]="formatDateTime(f.originalDepartureTime)"
-                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
-                  disabled
-                />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Revised Departure</label
-                >
-                <p-datepicker
-                  [(ngModel)]="f.revisedDepartureTime"
-                  [ngModelOptions]="{ standalone: true }"
-                  [showTime]="true"
-                  hourFormat="24"
-                  showIcon="true"
-                  appendTo="body"
-                  inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
-                  dateFormat="yy-mm-dd"
-                  placeholder="YYYY-MM-DD HH:mm"
-                ></p-datepicker>
-              </div>
+              <ng-container *ngIf="iropActionType === 'REVISED'">
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Original Departure</label
+                  >
+                  <input
+                    [value]="formatDateTime(f.originalDepartureTime)"
+                    class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Revised Departure</label
+                  >
+                  <p-datepicker
+                    [(ngModel)]="f.revisedDepartureTime"
+                    [ngModelOptions]="{ standalone: true }"
+                    [showTime]="true"
+                    hourFormat="24"
+                    showIcon="true"
+                    appendTo="body"
+                    inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
+                    dateFormat="yy-mm-dd"
+                    placeholder="YYYY-MM-DD HH:mm"
+                  ></p-datepicker>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Original Arrival</label
+                  >
+                  <input
+                    [value]="formatDateTime(f.originalArrivalTime)"
+                    class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Revised Arrival</label
+                  >
+                  <p-datepicker
+                    [(ngModel)]="f.revisedArrivalTime"
+                    [ngModelOptions]="{ standalone: true }"
+                    [showTime]="true"
+                    hourFormat="24"
+                    showIcon="true"
+                    appendTo="body"
+                    inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
+                    dateFormat="yy-mm-dd"
+                    placeholder="YYYY-MM-DD HH:mm"
+                  ></p-datepicker>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Original Aircraft</label
+                  >
+                  <input
+                    type="text"
+                    [value]="f.originalOperatingAircraft"
+                    class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Revised Aircraft</label
+                  >
+                  <input
+                    type="text"
+                    [(ngModel)]="f.revisedOperatingAircraft"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="w-full border border-gray-300 rounded-md px-2 py-2"
+                  />
+                </div>
+              </ng-container>
 
-              <!-- Original & Revised Arrival -->
+              <!-- CANCELLED Field Group -->
+              <ng-container *ngIf="iropActionType === 'CANCELLED'">
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Original Status</label
+                  >
+                  <input
+                    [value]="f.originalFlightStatus"
+                    class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block"
+                    >Revised Status</label
+                  >
+                  <p-select
+                    [options]="[
+                      { label: 'Open', value: 'Open' },
+                      { label: 'Closed', value: 'Closed' },
+                      { label: 'Cancelled', value: 'Cancelled' }
+                    ]"
+                    [(ngModel)]="f.revisedFlightStatus"
+                    [ngModelOptions]="{ standalone: true }"
+                    appendTo="body"
+                    class="w-full"
+                    placeholder="Select Status"
+                  ></p-select>
+                </div>
+              </ng-container>
               <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Original Arrival</label
-                >
-                <input
-                  [value]="formatDateTime(f.originalArrivalTime)"
-                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
-                  disabled
-                />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Revised Arrival</label
-                >
-                <p-datepicker
-                  [(ngModel)]="f.revisedArrivalTime"
+                <label class="text-xs text-gray-500 mb-1 block">Reason*</label>
+                <p-select
+                  [options]="reasons"
+                  [(ngModel)]="f.reason"
                   [ngModelOptions]="{ standalone: true }"
-                  [showTime]="true"
-                  hourFormat="24"
-                  showIcon="true"
+                  class="w-full"
+                  placeholder="Select Reason"
                   appendTo="body"
-                  inputClass="w-full border border-gray-300 rounded-md px-2 py-2"
-                  dateFormat="yy-mm-dd"
-                  placeholder="YYYY-MM-DD HH:mm"
-                ></p-datepicker>
-              </div>
-
-              <!-- Aircraft -->
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Original Aircraft</label
-                >
-                <input
-                  type="text"
-                  [value]="f.originalOperatingAircraft"
-                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
-                  disabled
-                />
+                ></p-select>
               </div>
               <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Revised Aircraft</label
-                >
+                <label class="text-xs text-gray-500 mb-1 block">Remark</label>
                 <input
-                  type="text"
-                  [(ngModel)]="f.revisedOperatingAircraft"
-                  [ngModelOptions]="{ standalone: true }"
+                  [value]="f.remark"
                   class="w-full border border-gray-300 rounded-md px-2 py-2"
                 />
               </div>
 
-              <!-- Status -->
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Original Status</label
-                >
-                <input
-                  [value]="f.originalFlightStatus"
-                  class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
-                  disabled
-                />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block"
-                  >Revised Status</label
-                >
-                <p-select
-                  [options]="[
-                    { label: 'Open', value: 'Open' },
-                    { label: 'Closed', value: 'Closed' },
-                    { label: 'Cancelled', value: 'Cancelled' }
-                  ]"
-                  [(ngModel)]="f.revisedFlightStatus"
-                  [ngModelOptions]="{ standalone: true }"
-                  appendTo="body"
-                  class="w-full"
-                  placeholder="Select Status"
-                ></p-select>
-              </div>
+              <!-- INFORM / RESUME จะมาเสริมในอนาคต -->
             </div>
             <div class="my-4 mx-2 text-right">
               <button

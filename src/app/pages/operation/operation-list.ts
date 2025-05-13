@@ -4,9 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { SubscriptionDestroyer } from '../../core/helper/SubscriptionDestroyer.helper';
-import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
@@ -15,7 +14,9 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { PermissionService } from '../../service/permission.service';
 import { AuthService } from '../../service/auth.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { CalendarModule } from 'primeng/calendar';
+import { FlightService } from '../../service/flight.service';
+import { DatePickerModule } from 'primeng/datepicker';
+import { SelectModule } from 'primeng/select';
 @Component({
   selector: 'operation-list',
   standalone: true,
@@ -25,15 +26,15 @@ import { CalendarModule } from 'primeng/calendar';
     TableModule,
     ButtonModule,
     TagModule,
-    DropdownModule,
     InputTextModule,
     InputIconModule,
     IconFieldModule,
     SplitButtonModule,
     ConfirmDialogModule,
-    CalendarModule,
+    DatePickerModule,
+    SelectModule,
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [ConfirmationService],
   template: `
     <p-confirmDialog></p-confirmDialog>
     <div class="p-6 bg-white rounded-xl shadow-md">
@@ -82,7 +83,7 @@ import { CalendarModule } from 'primeng/calendar';
                   <i class="pi pi-times"></i>
                 </button>
               </div>
-              <p-dropdown
+              <p-select
                 name="selectedStatus"
                 [(ngModel)]="selectedStatus"
                 [options]="statusOptions"
@@ -90,8 +91,8 @@ import { CalendarModule } from 'primeng/calendar';
                 optionLabel="label"
                 optionValue="value"
                 class="w-full mb-3"
-              ></p-dropdown>
-              <p-dropdown
+              ></p-select>
+              <p-select
                 name="selectedCreatedBy"
                 [(ngModel)]="selectedCreatedBy"
                 [options]="createdByOptions"
@@ -99,8 +100,27 @@ import { CalendarModule } from 'primeng/calendar';
                 optionLabel="label"
                 optionValue="value"
                 class="w-full mb-3"
-              ></p-dropdown>
-              <p-calendar
+              ></p-select>
+              <p-select
+                name="selectedMessageType"
+                [(ngModel)]="selectedMessageType"
+                [options]="messageTypeOptions"
+                placeholder="Filter by Message Type"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full mb-3"
+              ></p-select>
+
+              <p-select
+                name="selectedActionCode"
+                [(ngModel)]="selectedActionCode"
+                [options]="actionCodeOptions"
+                placeholder="Filter by Action Code"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full mb-3"
+              ></p-select>
+              <p-datePicker
                 name="selectedDateRange"
                 [(ngModel)]="selectedDateRange"
                 selectionMode="range"
@@ -133,40 +153,48 @@ import { CalendarModule } from 'primeng/calendar';
           />
         </p-iconfield>
       </div>
-
       <p-table
         [value]="getFilteredOperations()"
         [paginator]="true"
         [rows]="10"
         responsiveLayout="scroll"
-        class="shadow rounded overflow-hidden "
+        class="shadow rounded overflow-hidden"
       >
         <ng-template pTemplate="header">
           <tr class="bg-gray-100 text-sm text-gray-700">
-            <th class="px-4 py-2">Transaction No.</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Created By</th>
-            <th class="px-4 py-2">Season</th>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Section Count</th>
-            <th class="px-4 py-2 text-center flex justify-center">Actions</th>
+            <th class="px-4 py-2 !text-center">Transaction No.</th>
+            <th class="px-4 py-2 !text-center">Message Type</th>
+            <th class="px-4 py-2 !text-center">Created Team</th>
+            <th class="px-4 py-2 !text-center">Season</th>
+            <th class="px-4 py-2 !text-center">Action Code</th>
+            <th class="px-4 py-2 !text-center">Created Date</th>
+            <th class="px-4 py-2 !text-center">Status</th>
+            <th class="px-4 py-2 !text-center">Flight Count</th>
+            <th class="px-4 py-2 !text-center">Actions</th>
           </tr>
         </ng-template>
+
         <ng-template pTemplate="body" let-op let-index="rowIndex">
           <tr
             class="hover:bg-gray-50 transition duration-200 ease-in-out text-sm"
           >
-            <td class="px-4 py-2">{{ op.transactionNo }}</td>
-            <td class="px-4 py-2">
-              <span [ngClass]="getStatusClass(op.status)">
-                {{ op.status }}
+            <td class="px-4 py-2 !text-center">{{ op.transactionNumber }}</td>
+            <td class="px-4 py-2 !text-center">{{ op.messageType }}</td>
+            <td class="px-4 py-2 !text-center">{{ op.createdTeam }}</td>
+            <td class="px-4 py-2 !text-center">{{ op.season }}</td>
+            <td class="px-4 py-2 !text-center">{{ op.actionCode }}</td>
+            <td class="px-4 py-2 !text-center">
+              {{ op.createdDate | date : 'yyyy-MM-dd' }}
+            </td>
+            <td class="px-4 py-2 !text-center">
+              <span [ngClass]="getStatusClass(op.statusDescription)">
+                {{ op.statusDescription }}
               </span>
             </td>
-            <td class="px-4 py-2">{{ op.createdBy }}</td>
-            <td class="px-4 py-2">{{ op.season?.label }}</td>
-            <td class="px-4 py-2">{{ op.createDate | date : 'yyyy-MM-dd' }}</td>
-            <td class="px-4 py-2">{{ op.sections?.length }}</td>
-            <td class="px-4 py-2 text-center">
+            <td class="px-4 py-2 !text-center">
+              {{ op.flightIropItems?.length }}
+            </td>
+            <td class="px-4 py-2 !text-center">
               <div class="flex justify-center gap-2">
                 <button
                   pButton
@@ -184,7 +212,7 @@ import { CalendarModule } from 'primeng/calendar';
                   pButton
                   icon="pi pi-trash"
                   class="p-button-rounded p-button-danger p-button-sm"
-                  (click)="deleteOperation(index)"
+                  (click)="deleteOperation(op, index)"
                 ></button>
               </div>
             </td>
@@ -203,14 +231,31 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
   selectedDateRange: Date[] = [];
 
   statusOptions = [
-    { label: 'Created', value: 'CREATED' },
-    { label: 'Approved', value: 'APPROVED' },
-    { label: 'Done', value: 'DONE' },
+    { label: 'CREATED', value: 'CREATED' },
+    { label: 'APPROVED', value: 'APPROVED' },
+    { label: 'INPROGRESS', value: 'INPROGRESS' },
+    { label: 'DONE', value: 'DONE' },
   ];
 
   createdByOptions = [
     { label: 'Planning', value: 'PLN' },
     { label: 'Operation', value: 'OPS' },
+  ];
+
+  selectedMessageType: string | null = null;
+  selectedActionCode: string | null = null;
+
+  actionCodeOptions = [
+    { label: 'REVISED', value: 'REVISED' },
+    { label: 'CANCELLED', value: 'CANCELLED' },
+    { label: 'INFORM', value: 'INFORM' },
+    { label: 'RESUME', value: 'RESUME' },
+  ];
+
+  messageTypeOptions = [
+    { label: 'OPS', value: 'OPS' },
+    { label: 'ASM', value: 'ASM' },
+    { label: 'SSM', value: 'SSM' },
   ];
 
   createOptions = [
@@ -241,19 +286,44 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
     public permissionService: PermissionService,
-    private authService: AuthService
+    private authService: AuthService,
+    private service: FlightService
   ) {
     super();
   }
 
   ngOnInit(): void {
-    const saved = sessionStorage.getItem('iropTransactions');
-    const fromStorage = saved ? JSON.parse(saved) : [];
-    this.operations = fromStorage.map((op: any) => ({
-      ...op,
-      createDate: new Date(op.createDate),
-    }));
-    console.log(this.operations);
+    this.reloadOperations();
+    const routerSub = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.reloadOperations();
+      }
+    });
+    this.AddSubscription(routerSub);
+  }
+
+  reloadOperations() {
+    const obs = this.service.getSavedOperations().subscribe({
+      next: (res) => {
+        this.operations = res.map((op: any) => ({
+          ...op,
+          createdDate: new Date(op.createdDate), // ตอนนี้ backend ส่ง createdDate
+        }));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Loaded',
+          detail: 'Operation list loaded successfully!',
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'Unable to load operations.',
+        });
+      },
+    });
+    this.AddSubscription(obs);
   }
 
   onDefaultCreateClick() {
@@ -265,12 +335,19 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
   }
 
   viewOperation(op: any) {
-    this.router.navigate([`/admin/operation/approved/${op.transactionNo}`]);
+    this.router.navigate([`/admin/operation/approved/${op.transactionNumber}`]);
   }
 
   editOperation(op: any) {
-    // Implement later
-    alert('✏️ Edit not implemented yet');
+    if (op.statusDescription !== 'CREATED') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Edit',
+        detail: 'You can edit only transactions with status "CREATED".',
+      });
+      return;
+    }
+    this.router.navigate(['/admin/operation/edit', op.transactionNumber]);
   }
 
   navigateToCreate(type: string) {
@@ -299,7 +376,7 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
     });
   }
 
-  deleteOperation(index: number) {
+  deleteOperation(op: any, index: number) {
     this.confirmationService.confirm({
       message: 'Are you sure you want to delete this transaction?',
       header: 'Confirm Deletion',
@@ -309,17 +386,26 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
       acceptButtonStyleClass: 'p-button-danger',
       rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {
-        this.operations.splice(index, 1);
-        sessionStorage.setItem(
-          'iropTransactions',
-          JSON.stringify(this.operations)
-        );
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'Transaction has been deleted.',
-        });
+        const obs = this.service
+          .deleteSavedOperation(op.transactionNumber)
+          .subscribe({
+            next: () => {
+              this.operations.splice(index, 1); // ลบจาก list บนจอ
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Deleted',
+                detail: 'Transaction has been deleted.',
+              });
+            },
+            error: (err) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete transaction.',
+              });
+            },
+          });
+        this.AddSubscription(obs);
       },
     });
   }
@@ -342,6 +428,8 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
   clearFilters() {
     this.selectedStatus = null;
     this.selectedCreatedBy = null;
+    this.selectedMessageType = null;
+    this.selectedActionCode = null;
     this.selectedDateRange = [];
     this.searchKeyword = '';
   }
@@ -349,21 +437,40 @@ export class OperationList extends SubscriptionDestroyer implements OnInit {
   getFilteredOperations() {
     return this.operations.filter((op) => {
       const matchesStatus =
-        !this.selectedStatus || op.status === this.selectedStatus;
+        !this.selectedStatus || op.statusDescription === this.selectedStatus;
       const matchesCreatedBy =
-        !this.selectedCreatedBy || op.createdBy === this.selectedCreatedBy;
+        !this.selectedCreatedBy || op.createdTeam === this.selectedCreatedBy;
+      const matchesMessageType =
+        !this.selectedMessageType ||
+        op.messageType === this.selectedMessageType;
+      const matchesActionCode =
+        !this.selectedActionCode || op.actionCode === this.selectedActionCode;
       const matchesDate =
         this.selectedDateRange.length === 0 ||
-        (op.createDate instanceof Date &&
-          op.createDate >= this.selectedDateRange[0] &&
-          op.createDate <= this.selectedDateRange[1]);
+        (op.createdDate &&
+          (!this.selectedDateRange[0] ||
+            op.createdDate >= this.selectedDateRange[0]) &&
+          (!this.selectedDateRange[1] ||
+            op.createdDate <= this.selectedDateRange[1]));
       const keyword = this.searchKeyword?.toLowerCase();
       const matchesKeyword =
         !keyword ||
-        [op.transactionNo, op.season.label].some((f) =>
-          f?.toLowerCase().includes(keyword)
-        );
-      return matchesStatus && matchesCreatedBy && matchesDate && matchesKeyword;
+        [
+          op.transactionNumber,
+          op.messageType,
+          op.createdTeam,
+          op.season,
+          op.actionCode,
+        ].some((f) => f?.toLowerCase().includes(keyword));
+
+      return (
+        matchesStatus &&
+        matchesCreatedBy &&
+        matchesMessageType &&
+        matchesActionCode &&
+        matchesDate &&
+        matchesKeyword
+      );
     });
   }
 }

@@ -21,7 +21,7 @@ export class FlightService {
     req: ISearchFlightScheduleRequest
   ): Observable<IIropFlightSchedule[]> {
     return this.http.get(
-      `${environment.flight}api/Flight/schedule?flightNumber=${req.flightNumber}&startSearchDate=${req.startSearchDate}&endSearchDate=${req.endSearchDate}`,
+      `${environment.flight}api/Flight/schedule?flightNumber=${req.flightNumber}&startSearchDate=${req.startSearchDate}&endSearchDate=${req.endSearchDate}&dop=${req.dop}&flightStatus=${req.flightStatus}`,
       true
     );
   }
@@ -37,10 +37,42 @@ export class FlightService {
   }
 
   createOperation(body: any): Observable<any> {
-    return this.http.post(
-      `${environment.flight}/api/Flight/create`,
-      body,
-      true
+    return this.http.post(`${environment.flight}api/Flight/create`, body, true);
+  }
+
+  getSavedOperations(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.flight}api/Flight/saved-operations`
+    );
+  }
+
+  deleteSavedOperation(transactionNumber: string) {
+    return this.http.delete(
+      `${environment.flight}api/Flight/saved-operations/${transactionNumber}`
+    );
+  }
+
+  getSavedOperationById(transactionNumber: string) {
+    return this.http.get<any>(
+      `${environment.flight}api/Flight/saved-operations/${transactionNumber}`
+    );
+  }
+
+  updateSavedOperationStatus(transactionNumber: string, status: string) {
+    return this.http.patch(
+      `${environment.flight}api/Flight/saved-operations/${transactionNumber}/status`,
+      { status }
+    );
+  }
+
+  getReasons(id: number): Observable<any[]> {
+    return this.http.get(`${environment.flight}api/Flight/reasons/${id}`, true);
+  }
+
+  updateSavedOperation(txn: string, payload: any) {
+    return this.http.put(
+      `${environment.flight}api/Flight/operations/${txn}`,
+      payload
     );
   }
 }

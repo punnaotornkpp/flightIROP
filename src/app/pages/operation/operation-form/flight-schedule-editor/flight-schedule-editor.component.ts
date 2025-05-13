@@ -150,6 +150,8 @@ export class FlightScheduleEditorComponent
       flightNumber,
       startSearchDate: start,
       endSearchDate: end,
+      flightStatus: '', // A = Active, I = Inactive
+      dop: '', // 0 = all days
     };
     const frequencyToDay: Record<string, string> = {
       '1': 'Mon',
