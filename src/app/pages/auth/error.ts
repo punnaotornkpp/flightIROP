@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { AppConfigurator } from '../../layout/components/app.configurator';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
 
 @Component({
   selector: 'app-error',

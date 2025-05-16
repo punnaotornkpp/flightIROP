@@ -21,3 +21,6 @@
   margin-right: 4px;
 }
 
+.p-datatable-striped tbody > tr:nth-child(even) {
+  background-color: #fffef8;
+}

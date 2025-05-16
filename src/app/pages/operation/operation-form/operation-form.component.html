@@ -1,6 +1,8 @@
 <div class="card">
   <div class="text-surface-900 dark:text-surface-0 block">
-    <h2 class="text-2xl font-bold mb-6">Create Operation</h2>
+    <h2 class="text-2xl font-bold mb-8">
+      Create Operation – {{ iropActionType }}
+    </h2>
     <form [formGroup]="form" (ngSubmit)="onAdd()" class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <p-select
@@ -11,6 +13,7 @@
           placeholder="Select IATA Season"
           class="w-full"
         ></p-select>
+
         <p-select
           [options]="sourceTypeOptions"
           formControlName="sourceType"
@@ -18,125 +21,90 @@
           class="w-full"
         ></p-select>
       </div>
-      <div class="flex flex-col gap-2">
+      <div>
         <p-editor
           formControlName="customNotifyMessage"
           styleClass="w-full"
-          [style]="{ height: '100px' }"
+          [style]="{ height: '120px' }"
         ></p-editor>
       </div>
-      <div class="flex flex-col gap-2">
+      <div>
+        <p-select
+          [options]="reasons"
+          formControlName="reason"
+          class="w-full"
+          placeholder="Select Reason"
+          appendTo="body"
+        ></p-select>
+      </div>
+      <div>
         <textarea
-          rows="2"
+          rows="3"
           pInputText
           formControlName="remark"
           placeholder="Enter Remark"
           class="w-full"
         ></textarea>
       </div>
-      <div
-        *ngIf="flightIropItems.length > 0"
-        class="flex justify-between items-center mb-2 w-full flex-wrap gap-2"
+      <ng-container
+        *ngIf="flightIropItems.length > 0 && selectedSourceType === 'SSM'"
       >
-        <div *ngIf="iropActionType === 'REVISED'" class="flex-1">
-          <button
-            pButton
-            label="Set Time for Selected Flights"
-            class="p-button-warning"
-            (click)="handleOpenTimePanel($event, popoverTime)"
-          ></button>
-        </div>
-
-        <div class="flex gap-2 items-center">
-          <p-select
-            [options]="reasons"
-            [(ngModel)]="selectedReason"
-            [ngModelOptions]="{ standalone: true }"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select Reason to Apply"
-            class="w-64"
-            appendTo="body"
-          ></p-select>
-
-          <button
-            pButton
-            label="Apply to Selected"
-            class="p-button-success"
-            (click)="handleOpenFlightPanel($event, op)"
-            [disabled]="!selectedReason"
-          ></button>
-        </div>
-
-        <!-- Popover for Reason -->
-        <p-popover #op [dismissable]="true">
-          <div class="flex flex-col justify-between h-48 p-4">
-            <p-multiselect
-              [options]="flightNumberOptions"
-              [(ngModel)]="selectedFlightNumbers"
-              [ngModelOptions]="{ standalone: true }"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select Flights"
-              class="w-96 font-mono"
-            ></p-multiselect>
-            <div class="flex justify-end gap-2 mt-2">
-              <button
-                pButton
-                type="button"
-                label="Apply"
-                (click)="confirmApplyReason(op)"
-              ></button>
-            </div>
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <div *ngIf="iropActionType === 'REVISED'" class="flex-1">
+            <button
+              pButton
+              label="Set Time for Selected Flights"
+              class="p-button-warning"
+              (click)="handleOpenTimePanel($event, popoverTime)"
+            ></button>
           </div>
-        </p-popover>
-
-        <!-- Popover for Bulk Edit Time -->
-        <p-popover #popoverTime [dismissable]="true">
-          <div class="flex flex-col gap-4 w-96 p-4">
-            <p-multiselect
-              [options]="flightNumberOptions"
-              [(ngModel)]="selectedFlightNumbers"
-              [ngModelOptions]="{ standalone: true }"
-              optionLabel="label"
-              optionValue="value"
-              class="font-mono"
-              placeholder="Select Flights"
-            ></p-multiselect>
-            <p-datepicker
-              [(ngModel)]="bulkRevisedDeparture"
-              [ngModelOptions]="{ standalone: true }"
-              [showTime]="true"
-              [timeOnly]="true"
-              hourFormat="24"
-              showIcon="true"
-              appendTo="body"
-              class="font-mono"
-              placeholder="Select Revised Departure Time"
-            ></p-datepicker>
-            <p-datepicker
-              [(ngModel)]="bulkRevisedArrival"
-              [ngModelOptions]="{ standalone: true }"
-              [showTime]="true"
-              [timeOnly]="true"
-              hourFormat="24"
-              showIcon="true"
-              appendTo="body"
-              class="font-mono"
-              placeholder="Select Revised Arrival Time"
-            ></p-datepicker>
-            <div class="flex justify-end">
-              <button
-                pButton
-                label="Apply"
-                class="p-button-success"
-                (click)="confirmBulkTimeUpdate(popoverTime)"
-              ></button>
+          <p-popover #popoverTime [dismissable]="true">
+            <div class="flex flex-col gap-4 w-96 p-4">
+              <p-multiselect
+                [options]="flightNumberOptions"
+                [(ngModel)]="selectedFlightNumbers"
+                [ngModelOptions]="{ standalone: true }"
+                optionLabel="label"
+                optionValue="value"
+                class="font-mono"
+                placeholder="Select Flights"
+              ></p-multiselect>
+              <p-datepicker
+                [(ngModel)]="bulkRevisedDeparture"
+                [ngModelOptions]="{ standalone: true }"
+                autoTimeFormat
+                [showTime]="true"
+                [timeOnly]="true"
+                hourFormat="24"
+                showIcon="true"
+                appendTo="body"
+                class="font-mono"
+                placeholder="Select Revised Departure Time"
+              ></p-datepicker>
+              <p-datepicker
+                [(ngModel)]="bulkRevisedArrival"
+                [ngModelOptions]="{ standalone: true }"
+                autoTimeFormat
+                [showTime]="true"
+                [timeOnly]="true"
+                hourFormat="24"
+                showIcon="true"
+                appendTo="body"
+                class="font-mono"
+                placeholder="Select Revised Arrival Time"
+              ></p-datepicker>
+              <div class="flex justify-end">
+                <button
+                  pButton
+                  label="Apply"
+                  class="p-button-success"
+                  (click)="confirmBulkTimeUpdate(popoverTime)"
+                ></button>
+              </div>
             </div>
-          </div>
-        </p-popover>
-      </div>
-
+          </p-popover>
+        </div>
+      </ng-container>
       <p-accordion [value]="0" [multiple]="true">
         <p-accordion-panel
           *ngFor="let f of flightIropItems; let i = index"
@@ -144,19 +112,28 @@
         >
           <p-accordion-header class="font-medium text-slate-700">
             <div class="flex justify-between items-center w-full">
-              <!-- ฝั่งซ้าย -->
-              <div [innerHTML]="getFlightHeader(f)" class="font-medium"></div>
-
-              <!-- ฝั่งขวา สรุป -->
-              <div
-                *ngIf="getFlightSummary(f)"
-                class="text-red-500 font-mono text-sm pr-4"
-              >
-                {{ getFlightSummary(f) }}
+              <div class="flex gap-2 items-center">
+                <span
+                  [innerHTML]="
+                    isFlightComplete(f)
+                      ? '<span class=`text-green-600`>✅</span>'
+                      : '<span class=`text-gray-400`>⬜</span>'
+                  "
+                ></span>
+                <span class="flex flex-wrap">
+                  <span class="text-slate-700 font-mono">
+                    Flight {{ f.flightNumber }} from {{ f.origin }} to
+                    {{ f.destination }} – Departure at&nbsp;
+                  </span>
+                  <span
+                    class="ml-1 font-mono text-yellow-600 font-semibold min-w-[260px] inline-block"
+                  >
+                    {{ formatDateTime(f.originalDepartureTime) }}
+                  </span>
+                </span>
               </div>
             </div>
           </p-accordion-header>
-
           <p-accordion-content
             [ngClass]="{
               '!border-l-4 pl-3': true,
@@ -173,12 +150,16 @@
                     >Original Departure</label
                   >
                   <input
-                    [value]="formatDateTime(f.originalDepartureTime)"
+                    [value]="f.originalDepartureTime"
                     class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
                     disabled
                   />
                 </div>
-                <div>
+                <div
+                  *ngIf="
+                    selectedSourceType === 'ASM' || selectedSourceType === 'OPS'
+                  "
+                >
                   <label class="text-xs text-gray-500 mb-1 block"
                     >Revised Departure</label
                   >
@@ -199,12 +180,16 @@
                     >Original Arrival</label
                   >
                   <input
-                    [value]="formatDateTime(f.originalArrivalTime)"
+                    [value]="f.originalArrivalTime"
                     class="w-full border border-gray-300 rounded-md px-2 py-2 bg-gray-100 text-gray-500"
                     disabled
                   />
                 </div>
-                <div>
+                <div
+                  *ngIf="
+                    selectedSourceType === 'ASM' || selectedSourceType === 'OPS'
+                  "
+                >
                   <label class="text-xs text-gray-500 mb-1 block"
                     >Revised Arrival</label
                   >
@@ -231,7 +216,11 @@
                     disabled
                   />
                 </div>
-                <div>
+                <div
+                  *ngIf="
+                    selectedSourceType === 'ASM' || selectedSourceType === 'OPS'
+                  "
+                >
                   <label class="text-xs text-gray-500 mb-1 block"
                     >Revised Aircraft</label
                   >
@@ -256,7 +245,7 @@
                     disabled
                   />
                 </div>
-                <div>
+                <!-- <div>
                   <label class="text-xs text-gray-500 mb-1 block"
                     >Revised Status</label
                   >
@@ -272,9 +261,9 @@
                     class="w-full"
                     placeholder="Select Status"
                   ></p-select>
-                </div>
+                </div> -->
               </ng-container>
-              <div>
+              <!-- <div>
                 <label class="text-xs text-gray-500 mb-1 block">Reason*</label>
                 <p-select
                   [options]="reasons"
@@ -291,7 +280,7 @@
                   [value]="f.remark"
                   class="w-full border border-gray-300 rounded-md px-2 py-2"
                 />
-              </div>
+              </div> -->
 
               <!-- INFORM / RESUME จะมาเสริมในอนาคต -->
             </div>
@@ -307,7 +296,6 @@
           </p-accordion-content>
         </p-accordion-panel>
       </p-accordion>
-
       <div class="flex justify-between mt-6">
         <button
           pButton
@@ -339,6 +327,7 @@
   </div>
   <app-flight-schedule-editor
     [(visible)]="flightDialogVisible"
+    [selectedSourceType]="selectedSourceType"
     (close)="onFlightDialogClose()"
     (save)="onFlightDialogSave($event)"
   ></app-flight-schedule-editor>

@@ -1,64 +1,20 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  Validators,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { DialogModule } from 'primeng/dialog';
-import { CheckboxModule } from 'primeng/checkbox';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { InputGroupModule } from 'primeng/inputgroup';
-import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { FlightService } from '../../../service/flight.service';
 import { AuthService } from '../../../service/auth.service';
 import {
-  ISeason,
   INoteOption,
   IFlightIropRequest,
   IFlightIropItem,
+  IFlightScheduleGroup,
 } from '../../../types/flight.model';
-import { FlightScheduleEditorComponent } from './flight-schedule-editor/flight-schedule-editor.component';
-import { AccordionModule, AccordionPanel } from 'primeng/accordion';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { SubscriptionDestroyer } from '../../../core/helper/SubscriptionDestroyer.helper';
-import { EditorModule } from 'primeng/editor';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
-import { PopoverModule } from 'primeng/popover';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SubscriptionDestroyer } from '../../../shared/core/helper/SubscriptionDestroyer.helper';
 @Component({
   selector: 'app-operation-form',
-  standalone: true,
+  standalone: false,
   templateUrl: './operation-form.component.html',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    FlightScheduleEditorComponent,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    DialogModule,
-    CheckboxModule,
-    MultiSelectModule,
-    InputGroupModule,
-    InputGroupAddonModule,
-    SelectModule,
-    DatePickerModule,
-    AccordionModule,
-    EditorModule,
-    ProgressSpinnerModule,
-    PopoverModule,
-    SelectButtonModule,
-  ],
 })
 export class OperationFormComponent
   extends SubscriptionDestroyer
@@ -82,6 +38,7 @@ export class OperationFormComponent
   selectedSeasonType: 'S' | 'W' | null = null;
   selectedSeasonYear: number | null = null;
   sourceTypeOptions: { label: string; value: string }[] = [];
+  selectedSourceType: 'OPS' | 'ASM' | 'SSM' | null = null;
   noteOptions: INoteOption[] = [
     { code: 'TC', description: 'Time Change' },
     { code: 'EQ', description: 'Equipment Change' },
@@ -124,6 +81,10 @@ export class OperationFormComponent
       : null;
     this.sourceTypeOptions = this.getSourceTypeOptionsByRole(this.userRole);
     this.buildForm();
+    this.form.get('sourceType')?.valueChanges.subscribe((newSourceType) => {
+      this.selectedSourceType = newSourceType as 'SSM' | 'ASM' | 'OPS';
+      this.flightIropItems = [];
+    });
     if (createdBy) {
       this.form.patchValue({ createdBy });
     }
@@ -151,23 +112,14 @@ export class OperationFormComponent
     });
   }
 
-  // updateSeasonCode() {
-  //   if (this.selectedSeasonType && this.selectedSeasonYear) {
-  //     const yearCode = this.selectedSeasonYear.toString().slice(-2); // 2025 -> "25"
-  //     const seasonCode = this.selectedSeasonType + yearCode;
-  //     this.form.get('season')?.setValue(seasonCode);
-  //   } else {
-  //     this.form.get('season')?.setValue(null);
-  //   }
-  // }
-
   buildForm() {
     this.form = this.fb.group({
       createdBy: ['', Validators.required],
       season: [null, Validators.required],
-      sourceType: [null],
+      sourceType: [null, Validators.required],
       messageCode: [''],
       remark: [''],
+      reason: [null, Validators.required],
       customNotifyMessage: [null, Validators.required],
     });
   }
@@ -193,6 +145,18 @@ export class OperationFormComponent
   }
 
   openAddFlightDialog() {
+    const selectedSourceType = this.form.get('sourceType')?.value;
+
+    if (!selectedSourceType) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Please select Source Type first',
+        detail: 'Please select a source type before adding a flight.',
+      });
+      return;
+    }
+
+    this.selectedSourceType = selectedSourceType;
     this.flightDialogVisible = true;
   }
 
@@ -200,22 +164,44 @@ export class OperationFormComponent
     this.flightDialogVisible = false;
   }
 
-  onFlightDialogSave(newFlights: IFlightIropItem[]) {
+  onFlightDialogSave(newGroup: IFlightScheduleGroup) {
     const existingKeys = new Set(
       this.flightIropItems.map(
         (f) =>
           `${f.flightNumber}|${this.formatDateOnly(f.originalDepartureTime)}`
       )
     );
-
-    const filteredNewFlights = newFlights.filter((f) => {
-      const key = `${f.flightNumber}|${this.formatDateOnly(
-        f.originalDepartureTime
-      )}`;
-      return !existingKeys.has(key);
-    });
-
-    if (filteredNewFlights.length < newFlights.length) {
+    const newItems: IFlightIropItem[] = newGroup.flightScheduleDetails
+      .map((d) => {
+        const key = `${newGroup.flightNumber}|${this.formatDateOnly(
+          d.scheduledDeparture
+        )}`;
+        if (existingKeys.has(key)) return null;
+        let base: IFlightIropItem = {
+          reason: null,
+          flightNumber: newGroup.flightNumber,
+          newFlightNumber: '',
+          origin: d.origin,
+          destination: d.destination,
+          originalDepartureTime: d.scheduledDeparture,
+          originalArrivalTime: d.scheduledArrival,
+          revisedDepartureTime: null,
+          revisedArrivalTime: null,
+          originalOperatingAircraft: newGroup.aircraftType,
+          revisedOperatingAircraft: null,
+          originalFlightStatus: d.flightStatus,
+          revisedFlightStatus: null,
+          day: d.day,
+          frequency: d.frequency,
+          remark: '',
+        };
+        if (this.iropActionType === 'CANCELLED') {
+          base.revisedFlightStatus = 'Cancelled';
+        }
+        return base;
+      })
+      .filter((item): item is IFlightIropItem => item !== null); // Remove nulls
+    if (newItems.length < newGroup.flightScheduleDetails.length) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Duplicate Flights',
@@ -223,70 +209,12 @@ export class OperationFormComponent
         life: 3000,
       });
     }
-
-    const withDefaults = filteredNewFlights.map((f) => {
-      let base = { ...f };
-      if (this.iropActionType === 'REVISED') {
-        base = {
-          ...base,
-          revisedDepartureTime: new Date(f.originalDepartureTime),
-          revisedArrivalTime: new Date(f.originalArrivalTime),
-          revisedOperatingAircraft: f.originalOperatingAircraft,
-        };
-      }
-      if (this.iropActionType === 'CANCELLED') {
-        base = {
-          ...base,
-          revisedFlightStatus: 'Cancelled',
-        };
-      }
-      return base;
-    });
-
-    this.flightIropItems = [...this.flightIropItems, ...withDefaults];
+    this.flightIropItems = [...this.flightIropItems, ...newItems];
     this.flightDialogVisible = false;
   }
 
   formatDateOnly(dateStr: string): string {
     return dateStr.split('T')[0];
-  }
-
-  getFlightSummary(f: IFlightIropItem): string {
-    if (!this.iropActionType) return '';
-
-    switch (this.iropActionType) {
-      case 'REVISED':
-        if (
-          !f.revisedDepartureTime ||
-          !f.revisedArrivalTime ||
-          !f.revisedOperatingAircraft
-        ) {
-          return '';
-        }
-        return `New Time: ${this.formatTimeOnly(
-          f.revisedDepartureTime
-        )} - ${this.formatTimeOnly(f.revisedArrivalTime)}, Aircraft: ${
-          f.revisedOperatingAircraft
-        }, Reason: ${f.reason || '-'}`;
-
-      case 'CANCELLED':
-        if (!f.revisedFlightStatus) return '';
-        return `Status: ${f.revisedFlightStatus}, Reason: ${f.reason || '-'}`;
-
-      case 'INFORM':
-      case 'RESUME':
-        return `Reason: ${f.reason || '-'}, Remark: ${f.remark || '-'}`;
-
-      default:
-        return '';
-    }
-  }
-
-  formatTimeOnly(date: string | Date): string {
-    const d = new Date(date);
-    return `${String(d.getHours()).padStart(2, '0')}:${String(
-      d.getMinutes()
-    ).padStart(2, '0')}`;
   }
 
   getReasonTypeId(type: string | null): number | null {
@@ -308,13 +236,6 @@ export class OperationFormComponent
     this.flightIropItems.splice(index, 1);
   }
 
-  updateFlight(index: number, updated: Partial<IFlightIropItem>) {
-    this.flightIropItems[index] = {
-      ...this.flightIropItems[index],
-      ...updated,
-    };
-  }
-
   preparePayload(): IFlightIropRequest {
     const formValue = this.form.value;
     return {
@@ -326,13 +247,14 @@ export class OperationFormComponent
         destination: f.destination,
         originalDepartureTime: f.originalDepartureTime,
         originalArrivalTime: f.originalArrivalTime,
-        revisedDepartureTime: f.revisedDepartureTime ?? null,
-        revisedArrivalTime: f.revisedArrivalTime ?? null,
+        revisedDepartureTime: null,
+        revisedArrivalTime: null,
         originalOperatingAircraft: f.originalOperatingAircraft,
         revisedOperatingAircraft: f.revisedOperatingAircraft ?? null,
         originalFlightStatus: f.originalFlightStatus,
         revisedFlightStatus: f.revisedFlightStatus ?? null,
-        daysOfOperation: this.getDayNumber(f.originalDepartureTime),
+        day: f.day,
+        frequency: f.frequency,
         remark: f.remark ?? '',
       })),
       messageType: formValue.sourceType,
@@ -344,13 +266,7 @@ export class OperationFormComponent
     };
   }
 
-  getDayNumber(dateTime: string): number {
-    const date = new Date(dateTime);
-    return date.getDay() === 0 ? 7 : date.getDay(); // 1=Mon ... 7=Sun
-  }
-
   onAdd() {
-    console.log(this.form.value);
     if (!this.form.valid) {
       this.form.markAllAsTouched();
       return;
@@ -391,27 +307,22 @@ export class OperationFormComponent
     this.AddSubscription(obs);
   }
 
-  getNoteDescription(code: string): string {
-    const map: Record<string, string> = {
-      TC: 'Time Change',
-      EQ: 'Equipment Change',
-      CX: 'Flight Cancellation',
-      AC: 'Aircraft Change',
-      OT: 'Others',
-    };
-    return map[code] ?? '';
-  }
+  formatDateTime(value: string): string {
+    try {
+      const clean = value.split('T');
+      const datetime = clean.length > 2 ? clean[0] + 'T' + clean[1] : value;
 
-  getSeasonLabel(code: string): string {
-    const map: Record<string, string> = {
-      S25: 'Summer 2025',
-      W24: 'Winter 2024',
-      W25: 'Winter 2025',
-      S26: 'Summer 2026',
-      W26: 'Winter 2026',
-      S27: 'Summer 2027',
-    };
-    return `${map[code] || code} (${code})`;
+      const d = new Date(datetime);
+      if (isNaN(d.getTime())) return 'Invalid Date';
+      return d.toLocaleString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   }
 
   getFlightHeader(f: IFlightIropItem): string {
@@ -437,81 +348,19 @@ export class OperationFormComponent
   `;
   }
 
-  formatDateTime(value: string | Date): string {
-    const d = new Date(value);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const date = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const minute = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${date} ${hour}:${minute}`;
-  }
-
   isFlightComplete(f: IFlightIropItem): boolean {
-    if (!f.reason) return false;
-    if (this.iropActionType === 'REVISED') {
-      return !!(
-        f.revisedDepartureTime &&
-        f.revisedArrivalTime &&
-        f.revisedOperatingAircraft
-      );
+    switch (this.iropActionType) {
+      case 'REVISED':
+        return Boolean(f.revisedDepartureTime && f.revisedArrivalTime);
+      case 'CANCELLED':
+        return Boolean(f.revisedFlightStatus);
+      case 'INFORM':
+        return Boolean(f.reason);
+      case 'RESUME':
+        return Boolean(f.reason);
+      default:
+        return false;
     }
-    if (this.iropActionType === 'CANCELLED') {
-      return !!f.revisedFlightStatus;
-    }
-    if (this.iropActionType === 'INFORM' || this.iropActionType === 'RESUME') {
-      return !!f.reason;
-    }
-    return true;
-  }
-
-  onSelectFlight(index: number, event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-    if (checked) {
-      if (!this.selectedIndexes.includes(index)) {
-        this.selectedIndexes.push(index);
-      }
-    } else {
-      this.selectedIndexes = this.selectedIndexes.filter((i) => i !== index);
-    }
-  }
-
-  handleOpenFlightPanel(event: Event, panel: any) {
-    this.flightNumberOptions = this.flightIropItems.map((f) => {
-      const date = new Date(f.originalDepartureTime);
-      const day = date.toLocaleString('en-US', { weekday: 'short' }); // Thu
-      const month = date.toLocaleString('en-US', { month: 'short' }); // May
-      const dayNum = String(date.getDate()).padStart(2, '0'); // 01
-      const year = date.getFullYear();
-
-      return {
-        label: `Flight ${f.flightNumber} on ${day}, ${month} , ${year} ${dayNum}`,
-        value: f.flightNumber + '|' + f.originalDepartureTime,
-      };
-    });
-    panel.toggle(event);
-  }
-
-  confirmApplyReason(panel: any) {
-    if (!this.selectedReason || this.selectedFlightNumbers.length === 0) {
-      return;
-    }
-    this.flightIropItems = this.flightIropItems.map((f) => {
-      const key = f.flightNumber + '|' + f.originalDepartureTime;
-      if (this.selectedFlightNumbers.includes(key)) {
-        return { ...f, reason: this.selectedReason };
-      }
-      return f;
-    });
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Applied Successfully',
-      detail: 'Selected reason has been applied to selected flights.',
-      life: 3000,
-    });
-
-    panel.hide();
   }
 
   handleOpenTimePanel(event: Event, popover: any) {

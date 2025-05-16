@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AppLayout } from './layout/components/app.layout';
 import { Notfound } from './pages/notfound/notfound';
+import { AppLayout } from './shared/layout/components/app.layout';
 
 export const routes: Routes = [
   {
@@ -10,7 +10,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: () => import('../app/pages/pages.routes'),
+        loadChildren: () =>
+          import('../app/pages/pages.module').then((m) => m.PagesModule),
       },
     ],
   },

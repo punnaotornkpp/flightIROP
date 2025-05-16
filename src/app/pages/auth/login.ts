@@ -3,8 +3,6 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { LayoutService } from '../../layout/service/layout.service';
-import { AppConfigurator } from '../../layout/components/app.configurator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
@@ -13,6 +11,8 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PermissionService } from '../../service/permission.service';
 import { IUserInfo } from '../../types/auth.model';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
+import { LayoutService } from '../../shared/layout/service/layout.service';
 
 @Component({
   selector: 'app-login',

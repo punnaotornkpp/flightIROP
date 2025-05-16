@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import {
   IFlightInfoRequest,
   IFlightInfoView,
+  IFlightScheduleGroup,
   IIropFlightSchedule,
   ISearchFlightScheduleRequest,
 } from '../types/flight.model';
@@ -19,7 +20,7 @@ export class FlightService {
 
   getFlightScheduleInfo(
     req: ISearchFlightScheduleRequest
-  ): Observable<IIropFlightSchedule[]> {
+  ): Observable<IResponse<IFlightScheduleGroup>> {
     return this.http.get(
       `${environment.flight}api/Flight/schedule?flightNumber=${req.flightNumber}&startSearchDate=${req.startSearchDate}&endSearchDate=${req.endSearchDate}&dop=${req.dop}&flightStatus=${req.flightStatus}`,
       true

@@ -5,68 +5,56 @@ import {
   Output,
   OnInit,
   OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import {
-  IFlightInfoRequest,
-  IFlightInfoView,
-  IFlightIropItem,
+  IFlightScheduleDetail,
+  IFlightScheduleGroup,
   IIropFlightSchedule,
-  IScheduleDayDetailExtended,
   ISearchFlightScheduleRequest,
 } from '../../../../types/flight.model';
 import { FlightService } from '../../../../service/flight.service';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { CalendarModule } from 'primeng/calendar';
-import { CheckboxModule } from 'primeng/checkbox';
-import { DialogModule } from 'primeng/dialog';
-import { InputGroupModule } from 'primeng/inputgroup';
-import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
-import { InputTextModule } from 'primeng/inputtext';
-import { TabViewModule } from 'primeng/tabview';
-import { SubscriptionDestroyer } from '../../../../core/helper/SubscriptionDestroyer.helper';
-import { MessageService } from 'primeng/api';
-import { DatePickerModule } from 'primeng/datepicker';
+import { MenuItem, MessageService } from 'primeng/api';
+import { Menu } from 'primeng/menu';
+import { SubscriptionDestroyer } from '../../../../shared/core/helper/SubscriptionDestroyer.helper';
 @Component({
   selector: 'app-flight-schedule-editor',
-  standalone: true,
+  standalone: false,
   templateUrl: './flight-schedule-editor.component.html',
   styleUrls: ['./flight-schedule-editor.component.scss'],
-  imports: [
-    CommonModule,
-    FormsModule,
-    DialogModule,
-    CheckboxModule,
-    InputTextModule,
-    ButtonModule,
-    InputGroupModule,
-    InputGroupAddonModule,
-    TabViewModule,
-    DatePickerModule,
-  ],
 })
 export class FlightScheduleEditorComponent
   extends SubscriptionDestroyer
   implements OnInit, OnChanges
 {
   @Input() visible = false;
-  @Input() mode: 'ADD' | 'EDIT' = 'ADD';
   @Output() close = new EventEmitter<void>();
-  @Output() save = new EventEmitter<IFlightIropItem[]>();
+  @Output() save = new EventEmitter<IFlightScheduleGroup>();
   @Output() visibleChange = new EventEmitter<boolean>();
+  @Input() selectedSourceType: 'OPS' | 'ASM' | 'SSM' | null = null;
   loading = false;
-  loadingReview = false;
 
   flightSearch = {
     flightNumber: '',
-    startDate: null as Date | null,
-    endDate: null as Date | null,
+    rangeDate: null as Date | Date[] | null,
     singleDate: false,
   };
 
-  scheduleResult: IIropFlightSchedule[] = [];
-  flightInfoList: IFlightInfoView[] = [];
+  scheduleResultGroup!: IFlightScheduleGroup;
+  // scheduleResultDetails: IFlightScheduleDetail[] = [];
+  selectedDetailKeys = new Set<string>(); // หรือ Array<string> ก็ได้
+  dopDays = [
+    { label: 'Mon', value: '1' },
+    { label: 'Tue', value: '2' },
+    { label: 'Wed', value: '3' },
+    { label: 'Thu', value: '4' },
+    { label: 'Fri', value: '5' },
+    { label: 'Sat', value: '6' },
+    { label: 'Sun', value: '7' },
+  ];
+  selectedDops: string[] = ['1', '2', '3', '4', '5', '6', '7'];
+  currentMenuItems: MenuItem[] = [];
+  hasSearched = false;
 
   constructor(
     private service: FlightService,
@@ -74,25 +62,27 @@ export class FlightScheduleEditorComponent
   ) {
     super();
   }
-
-  ngOnInit(): void {
-    if (this.visible && this.mode === 'ADD') this.resetForm();
+  ngOnChanges(changes: SimpleChanges): void {
+    this.resetForm();
   }
 
-  ngOnChanges(): void {
-    if (this.visible && this.mode === 'ADD') {
-      this.resetForm();
-    }
+  ngOnInit(): void {
+    this.resetForm();
   }
 
   resetForm() {
     this.flightSearch = {
       flightNumber: '',
-      startDate: null,
-      endDate: null,
+      rangeDate: null as Date | Date[] | null,
       singleDate: false,
     };
-    this.scheduleResult = [];
+    this.scheduleResultGroup = {} as IFlightScheduleGroup;
+    // this.scheduleResultDetails = [];
+    this.selectedDetailKeys.clear();
+    this.selectedDops = ['1', '2', '3', '4', '5', '6', '7'];
+    this.currentMenuItems = [];
+    this.loading = false;
+    this.hasSearched = false;
   }
 
   formatDate(date: Date | null): string {
@@ -118,14 +108,12 @@ export class FlightScheduleEditorComponent
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
     const targetDay = parseInt(frequency); // 1 = Mon ... 7 = Sun
-
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const day = d.getDay() === 0 ? 7 : d.getDay();
       if (day === targetDay) {
         return this.formatDateToYMD(d); // ใช้ manual format แทน toISOString
       }
     }
-    console.warn('No matching day found for frequency:', frequency);
     return '';
   }
 
@@ -139,87 +127,74 @@ export class FlightScheduleEditorComponent
     );
   }
 
+  getDetailKey(d: IFlightScheduleDetail) {
+    return `${d.origin}|${d.destination}|${d.scheduledDeparture}`;
+  }
+
+  isSelected(d: IFlightScheduleDetail): boolean {
+    return this.selectedDetailKeys.has(this.getDetailKey(d));
+  }
+
+  toggle(d: IFlightScheduleDetail) {
+    const key = this.getDetailKey(d);
+    this.selectedDetailKeys.has(key)
+      ? this.selectedDetailKeys.delete(key)
+      : this.selectedDetailKeys.add(key);
+  }
+
   searchFlightSchedule() {
-    const { flightNumber, startDate, endDate, singleDate } = this.flightSearch;
-    if (!flightNumber || !startDate) return;
-
-    const start = this.formatDate(startDate);
-    const end = singleDate ? start : this.formatDate(endDate);
-
+    this.hasSearched = true;
+    const range = this.flightSearch.rangeDate;
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+    if (this.selectedSourceType === 'SSM') {
+      if (!Array.isArray(range) || range.length < 2) return; // ตรวจให้ชัวร์
+      [startDate, endDate] = range;
+    } else {
+      if (!range || range instanceof Array) return; // ห้ามเป็น array
+      startDate = endDate = range;
+    }
+    if (!this.flightSearch.flightNumber || !startDate || !endDate) return;
     const req: ISearchFlightScheduleRequest = {
-      flightNumber,
-      startSearchDate: start,
-      endSearchDate: end,
-      flightStatus: '', // A = Active, I = Inactive
-      dop: '', // 0 = all days
-    };
-    const frequencyToDay: Record<string, string> = {
-      '1': 'Mon',
-      '2': 'Tue',
-      '3': 'Wed',
-      '4': 'Thu',
-      '5': 'Fri',
-      '6': 'Sat',
-      '7': 'Sun',
+      flightNumber: this.flightSearch.flightNumber,
+      startSearchDate: this.formatDate(startDate),
+      endSearchDate: this.formatDate(endDate),
+      flightStatus: '',
+      dop: this.selectedDops.join(','),
     };
     this.loading = true;
     this.service.getFlightScheduleInfo(req).subscribe({
       next: (resp) => {
-        const allDays = ['1', '2', '3', '4', '5', '6', '7'];
-        const frequencyToDay: Record<string, string> = {
-          '1': 'Mon',
-          '2': 'Tue',
-          '3': 'Wed',
-          '4': 'Thu',
-          '5': 'Fri',
-          '6': 'Sat',
-          '7': 'Sun',
-        };
-
-        this.scheduleResult = resp.map((flight) => {
-          const scheduleMap = new Map(
-            flight.schedule.map((s) => [
-              s.frequency,
-              {
-                ...s,
-                scheduleDate: this.getScheduleDate(
-                  flight.effectiveDate,
-                  flight.expirationDate,
-                  s.frequency
-                ),
-                dayLabel: frequencyToDay[s.frequency] || '',
-                status: true,
-              } as IScheduleDayDetailExtended,
-            ])
-          );
-
-          const filledSchedule: IScheduleDayDetailExtended[] = allDays.map(
-            (freq) =>
-              scheduleMap.get(freq) ??
-              ({
-                frequency: freq,
-                scheduledDeparture: '',
-                scheduledArrival: '',
-                duration: '',
-                timeAdjustor: 0,
-                stops: 0,
-                scheduleDate: '',
-                dayLabel: frequencyToDay[freq] || '',
-                status: false,
-              } as IScheduleDayDetailExtended)
-          );
-
-          return {
-            ...flight,
-            schedule: filledSchedule,
-          };
-        });
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Search flight successfully!',
-        });
-        this.loading = false;
+        if (resp.data.flightScheduleDetails.length === 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No Data',
+            detail: 'No flight schedule found.',
+          });
+          this.loading = false;
+          return;
+        } else {
+          if (resp.data) this.scheduleResultGroup = resp.data;
+          this.scheduleResultGroup.flightScheduleDetails =
+            resp.data.flightScheduleDetails.map((s) => ({
+              ...s,
+              flightNumber: resp.data.flightNumber,
+              origin: s.origin,
+              destination: s.destination,
+              scheduledDeparture: s.scheduledDeparture,
+              scheduledArrival: s.scheduledArrival,
+              duration: s.duration,
+              frequency: s.frequency,
+              day: s.day,
+              flightStatus: s.flightStatus,
+            }));
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Search flight successfully!',
+          });
+          this.loading = false;
+        }
       },
       error: () => {
         this.loading = false;
@@ -237,6 +212,15 @@ export class FlightScheduleEditorComponent
     if (item) item.status = !item.status;
   }
 
+  toggleDop(dop: string) {
+    const index = this.selectedDops.indexOf(dop);
+    if (index >= 0) {
+      this.selectedDops.splice(index, 1);
+    } else {
+      this.selectedDops.push(dop);
+    }
+  }
+
   hideDialog() {
     this.visible = false;
     this.visibleChange.emit(false);
@@ -249,59 +233,78 @@ export class FlightScheduleEditorComponent
     return day === 0 ? 7 : day; // แปลงให้เป็น 1-7 (Mon-Sun)
   }
 
-  onSave() {
-    const selected: IFlightInfoRequest[] = this.scheduleResult.flatMap((f) =>
-      f.schedule
-        .filter((s) => s.status)
-        .map((s) => ({
-          flightNumber: f.flightNumber,
-          origin: f.origin,
-          destination: f.destination,
-          scheduledDeparture: s.scheduleDate,
-        }))
-    );
-    if (selected.length === 0) return;
-    this.loadingReview = true;
-    const obs = this.service.getFlightInfoForSchedule(selected).subscribe({
-      next: (info: IFlightInfoView[]) => {
-        const transformed = info.map(
-          (f): IFlightIropItem => ({
-            reason: null,
-            flightNumber: f.flightNumber,
-            newFlightNumber: '',
-            origin: f.origin,
-            destination: f.destination,
-            originalDepartureTime: f.scheduledDeparture,
-            originalArrivalTime: f.scheduledArrival,
-            revisedDepartureTime: null,
-            revisedArrivalTime: null,
-            originalOperatingAircraft: f.aircraftType,
-            revisedOperatingAircraft: null,
-            originalFlightStatus: f.flightStatus,
-            revisedFlightStatus: null,
-            daysOfOperation: this.getDayNumber(f.scheduledDeparture),
-            remark: '',
-          })
-        );
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Loaded flight info successfully!',
-        });
+  openMenu(event: Event, menu: Menu, row: IFlightScheduleDetail) {
+    this.currentMenuItems = this.getMenuItems(row);
+    menu.toggle(event);
+  }
 
-        this.loadingReview = false;
-        this.save.emit(transformed);
-        this.hideDialog();
+  getMenuItems(row: IFlightScheduleDetail) {
+    return [
+      {
+        label: 'Remove',
+        icon: 'pi pi-trash',
+        command: () => this.removeScheduleDetail(row),
       },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Failed',
-          detail: 'Failed to load flight info.',
-        });
-        this.loadingReview = false;
-      },
+    ];
+  }
+
+  removeScheduleDetail(row: IFlightScheduleDetail) {
+    const key = this.getDetailKey(row);
+    this.scheduleResultGroup.flightScheduleDetails =
+      this.scheduleResultGroup.flightScheduleDetails.filter(
+        (d) => this.getDetailKey(d) !== key
+      );
+    this.selectedDetailKeys.delete(key);
+  }
+
+  onSave() {
+    this.save.emit(this.scheduleResultGroup);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Loaded flight info successfully!',
     });
-    this.AddSubscription(obs);
+    this.hideDialog();
+    // const selected: IFlightScheduleDetail[] = this.scheduleResultDetails;
+    // if (selected.length === 0) return;
+    // const obs = this.service.getFlightInfoForSchedule(selected).subscribe({
+    //   next: (info: IFlightInfoView[]) => {
+    //     const transformed: IFlightIropItem[] = info.map((f) => ({
+    //       reason: null,
+    //       flightNumber: f.flightNumber,
+    //       newFlightNumber: '',
+    //       origin: f.origin,
+    //       destination: f.destination,
+    //       originalDepartureTime: f.scheduledDeparture,
+    //       originalArrivalTime: f.scheduledArrival,
+    //       revisedDepartureTime: null,
+    //       revisedArrivalTime: null,
+    //       originalOperatingAircraft: f.aircraftType,
+    //       revisedOperatingAircraft: null,
+    //       originalFlightStatus: f.flightStatus,
+    //       revisedFlightStatus: null,
+    //       day: f.day,
+    //       frequency: f.frequency,
+    //       remark: '',
+    //     }));
+
+    //     this.messageService.add({
+    //       severity: 'success',
+    //       summary: 'Success',
+    //       detail: 'Loaded flight info successfully!',
+    //     });
+    //     this.save.emit(transformed);
+    //     this.hideDialog();
+    //   },
+    //   error: () => {
+    //     this.messageService.add({
+    //       severity: 'error',
+    //       summary: 'Failed',
+    //       detail: 'Failed to load flight info.',
+    //     });
+    //   },
+    // });
+
+    // this.AddSubscription(obs);
   }
 }

@@ -1,40 +1,13 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
 import { NavigationEnd, Router } from '@angular/router';
-import { SubscriptionDestroyer } from '../../core/helper/SubscriptionDestroyer.helper';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputIconModule } from 'primeng/inputicon';
-import { IconFieldModule } from 'primeng/iconfield';
-import { SplitButtonModule } from 'primeng/splitbutton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { PermissionService } from '../../service/permission.service';
 import { AuthService } from '../../service/auth.service';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FlightService } from '../../service/flight.service';
-import { DatePickerModule } from 'primeng/datepicker';
-import { SelectModule } from 'primeng/select';
+import { SubscriptionDestroyer } from '../../shared/core/helper/SubscriptionDestroyer.helper';
 @Component({
   selector: 'operation-list',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    TagModule,
-    InputTextModule,
-    InputIconModule,
-    IconFieldModule,
-    SplitButtonModule,
-    ConfirmDialogModule,
-    DatePickerModule,
-    SelectModule,
-  ],
-  providers: [ConfirmationService],
+  standalone: false,
   template: `
     <p-confirmDialog></p-confirmDialog>
     <div class="p-6 bg-white rounded-xl shadow-md">

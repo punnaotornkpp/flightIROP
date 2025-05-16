@@ -1,35 +1,13 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 import { FlightService } from '../../../service/flight.service';
 import { MessageService } from 'primeng/api';
-import { SubscriptionDestroyer } from '../../../core/helper/SubscriptionDestroyer.helper';
-import { EditorModule } from 'primeng/editor';
-import { FormsModule } from '@angular/forms';
-import { CardModule } from 'primeng/card';
-import { DividerModule } from 'primeng/divider';
-import { AccordionModule } from 'primeng/accordion';
-import { DialogModule } from 'primeng/dialog';
+import { SubscriptionDestroyer } from '../../../shared/core/helper/SubscriptionDestroyer.helper';
 @Component({
   selector: 'app-operation-approved',
-  standalone: true,
+  standalone: false,
   templateUrl: './operation-approved.component.html',
   styleUrls: ['./operation-approved.component.scss'],
-  imports: [
-    TableModule,
-    ButtonModule,
-    CommonModule,
-    TagModule,
-    EditorModule,
-    FormsModule,
-    CardModule,
-    DividerModule,
-    AccordionModule,
-    DialogModule,
-  ],
 })
 export class OperationApprovedComponent
   extends SubscriptionDestroyer

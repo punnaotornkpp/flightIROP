@@ -3,13 +3,13 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { LayoutService } from '../../layout/service/layout.service';
-import { AppConfigurator } from '../../layout/components/app.configurator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
+import { LayoutService } from '../../shared/layout/service/layout.service';
 
 @Component({
   selector: 'app-register',

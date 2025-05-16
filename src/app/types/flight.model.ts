@@ -45,7 +45,8 @@ export interface IFlightIropItem {
   revisedOperatingAircraft: string | null;
   originalFlightStatus: string;
   revisedFlightStatus: string | null;
-  daysOfOperation: number;
+  day: string;
+  frequency: number;
   remark: string | null;
 }
 
@@ -73,7 +74,7 @@ export interface IScheduleDayDetailExtended extends IScheduleDayDetail {
 }
 
 export interface IFlightInfoRequest {
-  flightNumber: string;
+  // flightNumber: string;
   origin: string;
   destination: string;
   scheduledDeparture: string;
@@ -89,4 +90,35 @@ export interface IFlightInfoView {
   flightStatus: 'OPEN' | 'CLOSED' | 'CANCELLED';
   frequency: number;
   day: string;
+}
+
+///
+export interface IFlightScheduleGroup {
+  flightNumber: string;
+  origin: string;
+  destination: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  dop: string;
+  aircraftType: string;
+  flightScheduleDetails: IFlightScheduleDetail[];
+  flightScheduleNotFounds: IFlightScheduleNotFound[];
+}
+
+export interface IFlightScheduleDetail {
+  origin: string;
+  destination: string;
+  scheduledDeparture: string;
+  scheduledArrival: string;
+  duration: string;
+  frequency: number;
+  day: string;
+  flightStatus: string;
+}
+
+export interface IFlightScheduleNotFound {
+  frequency: number;
+  expectedDeparture: string;
+  day: string;
+  message: string;
 }

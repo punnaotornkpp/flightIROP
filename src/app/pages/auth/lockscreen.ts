@@ -1,12 +1,12 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { AppConfigurator } from '../../layout/components/app.configurator';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
-import { LayoutService } from '../../layout/service/layout.service';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
+import { LayoutService } from '../../shared/layout/service/layout.service';
 
 @Component({
   selector: 'app-lockscreen',
@@ -113,6 +113,5 @@ import { InputIconModule } from 'primeng/inputicon';
 })
 export class LockScreen {
   LayoutService = inject(LayoutService);
-
   isDarkTheme = computed(() => this.LayoutService.isDarkTheme());
 }

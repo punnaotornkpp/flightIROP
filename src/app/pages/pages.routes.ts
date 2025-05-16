@@ -1,15 +1,14 @@
 import { Routes } from '@angular/router';
+import { HomeComponent } from './home/home.component';
 
-export default [
+export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('../pages/home/home.component'),
-    data: { breadcrumb: 'Home' },
+    component: HomeComponent, // ต้อง import และ declare
   },
   {
     path: 'operation',
-    loadChildren: () => import('../pages/operation/operation.routes'),
-    data: { breadcrumb: 'Operation' },
+    loadChildren: () =>
+      import('./operation/operation.module').then((m) => m.OperationModule),
   },
-  { path: '**', redirectTo: '/notfound' },
-] as Routes;
+];

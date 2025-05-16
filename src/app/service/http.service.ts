@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { SessionStorage } from '../core/helper/session.helper';
+import { SessionStorage } from '../shared/core/helper/session.helper';
 
 @Injectable({
   providedIn: 'root',

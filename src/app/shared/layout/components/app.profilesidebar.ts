@@ -4,7 +4,7 @@ import { DrawerModule } from 'primeng/drawer';
 import { BadgeModule } from 'primeng/badge';
 import { LayoutService } from '../../layout/service/layout.service';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../service/auth.service';
+import { AuthService } from '../../../service/auth.service';
 
 @Component({
   selector: '[app-profilesidebar]',

@@ -1,13 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { AppConfigurator } from '../../layout/components/app.configurator';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
-import { LayoutService } from '../../layout/service/layout.service';
 import { RippleModule } from 'primeng/ripple';
 import { KeyFilterModule } from 'primeng/keyfilter';
 import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
+import { LayoutService } from '../../shared/layout/service/layout.service';
 
 @Component({
   selector: 'app-verification',

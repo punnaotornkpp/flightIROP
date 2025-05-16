@@ -1,11 +1,11 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { LayoutService } from '../../layout/service/layout.service';
-import { AppConfigurator } from '../../layout/components/app.configurator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { AppConfigurator } from '../../shared/layout/components/app.configurator';
+import { LayoutService } from '../../shared/layout/service/layout.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -108,6 +108,5 @@ import { InputTextModule } from 'primeng/inputtext';
 })
 export class ForgotPassword {
   LayoutService = inject(LayoutService);
-
   isDarkTheme = computed(() => this.LayoutService.isDarkTheme());
 }

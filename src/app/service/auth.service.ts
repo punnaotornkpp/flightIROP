@@ -45,7 +45,7 @@ export class AuthService {
       createdAt: '2025-03-25T17:19:11.0289776',
       modifiedAt: '2025-03-25T17:19:11.0290533',
       active: true,
-      role: 'OPERATION_MANAGER',
+      role: 'PLANNING_MANAGER',
     });
   }
 }
